@@ -1,0 +1,327 @@
+{
+  "protocolVersion": "1.11",
+  "roleProfile": {
+    "Executor": "executor.card",
+    "Auditor": "auditor.card",
+    "Coordinator": "coordinator.plan",
+    "Reviewer": "reviewer.mission"
+  },
+  "ruleToBlocks": {
+    "R-CARD-FIELDS": [
+      "card.fields"
+    ],
+    "R-D028": [
+      "arbiter.protocol",
+      "authority.coordinator",
+      "authority.reviewer"
+    ],
+    "R-DOCS": [
+      "authority.reviewer",
+      "git.docs"
+    ],
+    "R-EVIDENCE": [
+      "drive.artifacts",
+      "evidence.rule",
+      "heal.protocol",
+      "review.protocol",
+      "task.acceptance"
+    ],
+    "R-GIT": [
+      "git.auditor",
+      "git.docs",
+      "git.executor",
+      "role.boundary.continue"
+    ],
+    "R-I18N": [
+      "i18n.rule"
+    ],
+    "R-MARKER": [
+      "coordinator.prime",
+      "marker.agent",
+      "marker.answer",
+      "marker.arbiter",
+      "marker.coordinator",
+      "marker.provision",
+      "marker.review",
+      "reminder.marker"
+    ],
+    "R-MASTER-ONLY": [
+      "arbiter.protocol",
+      "authority.coordinator",
+      "authority.provision",
+      "authority.reviewer"
+    ],
+    "R-NO-REVIEWER-DISPATCH": [
+      "authority.coordinator",
+      "queue.coordinator"
+    ],
+    "R-PHASES": [
+      "phases.bans"
+    ],
+    "R-PR": [
+      "repo.target"
+    ],
+    "R-QUESTIONS": [
+      "adr.protocol",
+      "answer.protocol",
+      "questions.outgoing",
+      "questions.protocol",
+      "role.answer.protocol"
+    ],
+    "R-QUEUE": [
+      "authority.coordinator",
+      "queue.coordinator"
+    ],
+    "R-REPO-BOUNDARY": [
+      "drive.layout",
+      "repo.boundary"
+    ],
+    "R-ROLES": [
+      "authority.auditor",
+      "authority.coordinator",
+      "authority.executor",
+      "authority.reviewer"
+    ],
+    "R-SECRETS": [
+      "authority.core"
+    ],
+    "R-VERIFY-GITHUB": [
+      "arbiter.protocol",
+      "authority.auditor",
+      "authority.reviewer",
+      "git.auditor",
+      "review.protocol"
+    ],
+    "R-ZONES": [
+      "authority.core",
+      "role.boundary.continue"
+    ]
+  },
+  "profileRules": {
+    "admin.provision": [
+      "R-MARKER",
+      "R-MASTER-ONLY"
+    ],
+    "auditor.card": [
+      "R-CARD-FIELDS",
+      "R-EVIDENCE",
+      "R-GIT",
+      "R-MARKER",
+      "R-PR",
+      "R-QUESTIONS",
+      "R-REPO-BOUNDARY",
+      "R-ROLES",
+      "R-SECRETS",
+      "R-VERIFY-GITHUB",
+      "R-ZONES"
+    ],
+    "continuation.answer": [
+      "R-MARKER"
+    ],
+    "continuation.arbiter": [
+      "R-MARKER"
+    ],
+    "continuation.dispatch": [
+      "R-GIT",
+      "R-MARKER",
+      "R-ZONES"
+    ],
+    "continuation.pilot": [],
+    "continuation.plan": [
+      "R-MARKER"
+    ],
+    "continuation.review": [
+      "R-MARKER"
+    ],
+    "continuation.role.answer": [
+      "R-MARKER"
+    ],
+    "coordinator.plan": [
+      "R-D028",
+      "R-MARKER",
+      "R-MASTER-ONLY",
+      "R-NO-REVIEWER-DISPATCH",
+      "R-PHASES",
+      "R-QUESTIONS",
+      "R-QUEUE",
+      "R-REPO-BOUNDARY",
+      "R-ROLES",
+      "R-SECRETS",
+      "R-ZONES"
+    ],
+    "coordinator.recovery": [
+      "R-D028",
+      "R-MARKER",
+      "R-MASTER-ONLY",
+      "R-NO-REVIEWER-DISPATCH",
+      "R-QUEUE",
+      "R-ROLES"
+    ],
+    "delivery.compact": [
+      "R-MARKER"
+    ],
+    "executor.card": [
+      "R-CARD-FIELDS",
+      "R-EVIDENCE",
+      "R-GIT",
+      "R-I18N",
+      "R-MARKER",
+      "R-PHASES",
+      "R-PR",
+      "R-QUESTIONS",
+      "R-REPO-BOUNDARY",
+      "R-ROLES",
+      "R-SECRETS",
+      "R-ZONES"
+    ],
+    "heal.report": [
+      "R-EVIDENCE"
+    ],
+    "pilot.synapse": [],
+    "reminder.marker": [
+      "R-MARKER"
+    ],
+    "reviewer.answer": [
+      "R-D028",
+      "R-DOCS",
+      "R-GIT",
+      "R-MARKER",
+      "R-MASTER-ONLY",
+      "R-QUESTIONS",
+      "R-ROLES",
+      "R-VERIFY-GITHUB"
+    ],
+    "reviewer.arbiter": [
+      "R-D028",
+      "R-DOCS",
+      "R-MARKER",
+      "R-MASTER-ONLY",
+      "R-QUESTIONS",
+      "R-ROLES",
+      "R-VERIFY-GITHUB"
+    ],
+    "reviewer.card": [
+      "R-D028",
+      "R-DOCS",
+      "R-EVIDENCE",
+      "R-MARKER",
+      "R-MASTER-ONLY",
+      "R-PR",
+      "R-QUESTIONS",
+      "R-ROLES",
+      "R-VERIFY-GITHUB"
+    ],
+    "reviewer.mission": [
+      "R-D028",
+      "R-DOCS",
+      "R-EVIDENCE",
+      "R-GIT",
+      "R-MARKER",
+      "R-MASTER-ONLY",
+      "R-QUESTIONS",
+      "R-REPO-BOUNDARY",
+      "R-ROLES",
+      "R-SECRETS",
+      "R-VERIFY-GITHUB",
+      "R-ZONES"
+    ],
+    "role.answer": [
+      "R-MARKER",
+      "R-QUESTIONS"
+    ]
+  },
+  "profileAudience": {
+    "admin.provision": [
+      "Coordinator",
+      "Reviewer"
+    ],
+    "auditor.card": [
+      "Auditor"
+    ],
+    "continuation.answer": [
+      "Reviewer"
+    ],
+    "continuation.arbiter": [
+      "Reviewer"
+    ],
+    "continuation.dispatch": [
+      "Executor",
+      "Auditor"
+    ],
+    "continuation.pilot": [
+      "pilot"
+    ],
+    "continuation.plan": [
+      "Coordinator"
+    ],
+    "continuation.review": [
+      "Reviewer"
+    ],
+    "continuation.role.answer": [
+      "Executor",
+      "Auditor",
+      "Coordinator",
+      "Reviewer",
+      "Maintainer"
+    ],
+    "coordinator.plan": [
+      "Coordinator"
+    ],
+    "coordinator.recovery": [
+      "Coordinator"
+    ],
+    "delivery.compact": [
+      "Executor",
+      "Auditor",
+      "Reviewer"
+    ],
+    "executor.card": [
+      "Executor"
+    ],
+    "heal.report": [
+      "Maintainer"
+    ],
+    "pilot.synapse": [
+      "pilot"
+    ],
+    "reminder.marker": [],
+    "reviewer.answer": [
+      "Reviewer"
+    ],
+    "reviewer.arbiter": [
+      "Reviewer"
+    ],
+    "reviewer.card": [
+      "Reviewer"
+    ],
+    "reviewer.mission": [
+      "Reviewer"
+    ],
+    "role.answer": []
+  },
+  "profileGitWrite": {
+    "admin.provision": [],
+    "auditor.card": [],
+    "continuation.answer": [],
+    "continuation.arbiter": [],
+    "continuation.dispatch": [],
+    "continuation.pilot": [],
+    "continuation.plan": [],
+    "continuation.review": [],
+    "continuation.role.answer": [],
+    "coordinator.plan": [],
+    "coordinator.recovery": [],
+    "delivery.compact": [],
+    "executor.card": [
+      "git.executor"
+    ],
+    "heal.report": [],
+    "pilot.synapse": [],
+    "reminder.marker": [],
+    "reviewer.answer": [],
+    "reviewer.arbiter": [],
+    "reviewer.card": [],
+    "reviewer.mission": [],
+    "role.answer": []
+  }
+}
