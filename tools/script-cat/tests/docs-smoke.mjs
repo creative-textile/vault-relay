@@ -96,6 +96,15 @@ assert.match(contract.d106?.protocolNote || '', /protocolVersion остаётс�
 assert.match(contract.d106?.decision?.join(' ') || '', /daily-limit/, 'D-106: вид паузы назван');
 assert.match(contract.d106?.safety?.join(' ') || '', /aria-label/, 'D-106: детектор по метке UI');
 assert.match(contract.d106?.evidence?.probe || '', /relay-daily-limit-smoke/, 'D-106: проба названа');
+// D-124: непринятый ввод — транспорт-внутренняя правка без бюджетов; признак
+// берётся из writePrompt, а не из «поле непустое».
+assert.equal(contract.d124?.version, '1.16.1', 'D-124 привязан к выпуску ScriptCat 1.16.1');
+assert.equal(contract.d124?.budgetsRaised, false, 'D-124 не поднял бюджет');
+assert.match(contract.d124?.protocolNote || '', /protocolVersion остаётся 1\.11/, 'D-124 аддитивен');
+assert.match(contract.d124?.decision?.join(' ') || '', /registered/, 'D-124: факт приёма ввода назван');
+assert.match(contract.d124?.decision?.join(' ') || '', /sendScanSummary/, 'D-124: причина отказа названа');
+assert.match(contract.d124?.safety?.join(' ') || '', /registered:false/, 'D-124: лечение только по записи writePrompt');
+assert.match(contract.d124?.evidence?.probe || '', /relay-send-unregistered-smoke/, 'D-124: проба названа');
 assert.equal(contract.questionEnvelope?.properties?.gate?.type, 'boolean');
 assert.equal(contract.questionEnvelope?.properties?.need?.effectiveOnlyWhen, 'gate=true');
 assert.match(contract.markerMatrix.find((row) => row.marker === 'CF_ANSWER_RESULT')?.role || '', /question\.need/);
@@ -103,11 +112,15 @@ const decisionsDoc = readFileSync(join(root, 'docs/DECISIONS.md'), 'utf8');
 assert.match(decisionsDoc, /## D-105 \(1\.14\.32\)/);
 assert.match(decisionsDoc, /## D-106 \(1\.14\.33\)/, 'D-106 записан в решениях');
 const acceptanceDoc = readFileSync(join(root, 'docs/agents/acceptance-report.md'), 'utf8');
-assert.match(acceptanceDoc.split(/\r?\n/)[0], /1\.14\.33.*D-106/);
+// Шапка отчёта — текущий выпуск Vault; прежние выпуски остаются архивом ниже.
+assert.match(acceptanceDoc.split(/\r?\n/)[0], /1\.16\.1.*D-124/);
 assert.match(acceptanceDoc, /Живая.*ручн/i);
 const updateDoc = readFileSync(join(root, 'docs/scriptcat-update.md'), 'utf8');
-assert.match(updateDoc, /сейчас \*\*1\.14\.33\*\*/);
-assert.match(updateDoc, /1\.14\.33 \(D-106\)/, 'scriptcat-update описывает выпуск D-106');
+assert.match(updateDoc, /сейчас \*\*1\.16\.1\*\*/);
+assert.match(updateDoc, /1\.16\.0 \(D-108\)/, 'scriptcat-update описывает выпуск D-108');
+assert.match(decisionsDoc, /## D-124 \(1\.16\.1\)/, 'D-124 записан в решениях');
+assert.match(updateDoc, /1\.16\.1 \(D-124\)/, 'scriptcat-update описывает выпуск D-124');
+assert.match(updateDoc, /1\.15\.0 \(D-107\)/, 'история выпуска D-107 сохранена');
 assert.match(updateDoc, /1\.14\.32 \(D-105\)/);
 
 // 2. Все документы на месте (включая drive.md, закрывающий битую ссылку).
@@ -488,7 +501,8 @@ for (const [role, file] of Object.entries(roleDoc)) {
   const adr = readFileSync(join(root, 'tools/script-cat/src/25-legacy-adr.js'), 'utf8');
   assert.match(adr, /async function publishedTzVersion/, 'опубликованная редакция читается из репозитория');
   const cfg = readFileSync(join(root, 'tools/script-cat/src/01-config.js'), 'utf8');
-  assert.match(cfg, /queueDoc: "docs\/handoff\/syn-3-card-queue\.md"/, 'файл редакции задан конфигом');
+  // D-108: до первой миссии опубликованная редакция живёт в плане фаз.
+  assert.match(cfg, /queueDoc: "docs\/PHASES\.md"/, 'файл редакции задан конфигом');
   assert.match(cfg, /telemetryRepo: ""/, 'телеметрия в проект не пишется');
   const heal = readFileSync(join(root, 'tools/script-cat/src/41-heal.js'), 'utf8');
   assert.match(heal, /C\.telemetryRepo/, 'выгрузка идёт в отдельный репозиторий');

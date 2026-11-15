@@ -411,12 +411,12 @@ const question = {
   await runAnswerStep({ watermark: 'before-master', ref: 'q-1', kind: 'answer' });
   const pending = store.get('cfn-expect');
   api.__messages = [
-    { id: 'late-answer', raw: 'CF_ANSWER_RESULT {"question_id":"q-1","turn_id":"t","verdict":"answer","answer":"Мастер подтвердил Creative36711, 2026 и MIT."}' },
+    { id: 'late-answer', raw: 'CF_ANSWER_RESULT {"question_id":"q-1","turn_id":"t","verdict":"answer","answer":"Мастер подтвердил creative-textile, 2026 и MIT."}' },
   ];
   await api.answerStep(reviewer, pending, true);
   assert.equal(calls.patches.length, 1, 'поздний ответ записан автоматически');
   assert.equal(calls.patches[0].props['Статус'].select.name, 'Решено', 'вопрос закрыт после ответа');
-  assert.match(calls.patches[0].props['Ответ'].rich_text[0].text.content, /Creative36711/, 'содержимое позднего ответа сохранено');
+  assert.match(calls.patches[0].props['Ответ'].rich_text[0].text.content, /creative-textile/, 'содержимое позднего ответа сохранено');
   assert.equal(calls.plans.length, 1, 'после записи ход возвращён Координатору');
   assert.equal(calls.pauses.length, 1, 'новой ложной паузы нет');
 }
@@ -431,7 +431,7 @@ const question = {
   await runAnswerStep({ watermark: 'before-master', ref: 'q-1', kind: 'answer' });
   api.__messages = [];
   api.__rowStatus = 'Решено';
-  api.__rowAnswer = 'Мастер подтвердил Creative36711, 2026 и MIT.';
+  api.__rowAnswer = 'Мастер подтвердил creative-textile, 2026 и MIT.';
   await api.answerStep(reviewer, store.get('cfn-expect'), true);
   assert.equal(calls.patches.length, 0, 'уже внесённый человеком ответ не перезаписывается');
   assert.equal(store.get('cfn-expect'), null, 'ожидание снято после сверки Notion');

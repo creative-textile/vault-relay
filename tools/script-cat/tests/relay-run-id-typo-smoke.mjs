@@ -57,10 +57,10 @@ const RUN = 'a437578a-e5d6-4a26-b72d-41d2de180d6c';   // выдача и кар�
 const TYPO = 'a437578a-e5db-4a26-b72d-41d2de180d6c';  // ровно то, что пришло
 const OTHER_RUN = '09238d7a-4791-4ff0-ba7b-9bc29e493061'; // другая машина: другой префикс
 const AGENT = '01a19db7-c1d2-7898-bf38-ff9eff301088';
-const PR_URL = 'https://github.com/Creative36711/synapse/pull/26';
+const PR_URL = 'https://github.com/creative-textile/vault-core/pull/26';
 const agentResult = (extra = {}) => `CF_AGENT_RESULT ${JSON.stringify({
   dispatch_id: CARD, run_id: RUN, status: 'submitted', check: 0,
-  report: 'Arena/synapse/artifacts/SYN-2-S-4-a437578a-report.md', pr: PR_URL, merged: false, ...extra })}`;
+  report: 'Arena/vault/artifacts/SYN-2-S-4-a437578a-report.md', pr: PR_URL, merged: false, ...extra })}`;
 
 const TURN = '09999999-aaaa-4bbb-8ccc-eeeeeeeeeeee';
 const FIXED_NOW = Date.parse('2026-11-07T14:04:22.000Z');

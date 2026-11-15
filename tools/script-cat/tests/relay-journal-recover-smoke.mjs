@@ -99,7 +99,7 @@ const logCreated = () => ({ ok: true, fileId: 'log-1', name: 'd-1_r-1.md', resul
 // Проектный отказ не направляет пользователя в legacy-папку Relay.
 {
   const { api, calls } = load({
-    driveFolder: 'synapse',
+    driveFolder: 'vault',
     append: async (id) => {
       if (id === 'report-1') throw refusal('Запись разрешена только в текстовые файлы logs этого проекта.');
       return { ok: true, result: 'appended' };
@@ -107,7 +107,7 @@ const logCreated = () => ({ ok: true, fileId: 'log-1', name: 'd-1_r-1.md', resul
     createLog: logCreated,
   });
   await api('d-1', 'r-1', 'report-1', 'marker', 'entry');
-  assert.ok(calls.log.some((line) => line.includes('Arena/synapse/logs')));
+  assert.ok(calls.log.some((line) => line.includes('Arena/vault/logs')));
   assert.ok(calls.log.every((line) => !line.includes('только в Arena/logs')));
 }
 

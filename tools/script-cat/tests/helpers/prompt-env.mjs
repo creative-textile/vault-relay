@@ -41,11 +41,11 @@ export const task = (over = {}) => ({
   payload: '', ...over,
 });
 export const role = (fn, over = {}) => ({ name: `${fn} Core`, fn, zone: 'game/**', ...over });
-export const target = (over = {}) => ({ repo: 'Creative36711/synapse', baseBranch: 'main', ...over });
+export const target = (over = {}) => ({ repo: 'creative-textile/vault-core', baseBranch: 'main', ...over });
 
 export const dispatchRequest = (fn = 'Executor', over = {}) => ({
   kind: 'dispatch', role: role(fn), target: target(), task: task(),
-  mission: { id: UUID.mission }, drive: { project: 'synapse' }, delivery: { tier: 'full' }, ...over,
+  mission: { id: UUID.mission }, drive: { project: 'vault' }, delivery: { tier: 'full' }, ...over,
 });
 export const planRequest = (over = {}) => ({
   kind: 'plan', role: role('Coordinator'),
@@ -72,6 +72,6 @@ export const reminderRequest = (fn = 'Executor', markerName = 'CF_AGENT_RESULT',
 });
 export const pilotRequest = (over = {}) => ({
   kind: 'pilot', role: { fn: 'pilot' },
-  pilot: { brief: 'A. Ты — ИИ-разработчик игр. Сделай 2D выживание на canvas.', repo: 'Creative36711/synapse', startSha: 'a'.repeat(40) },
+  pilot: { brief: 'A. Ты — ИИ-разработчик игр. Сделай 2D выживание на canvas.', repo: 'creative-textile/vault-core', startSha: 'a'.repeat(40) },
   delivery: { tier: 'full' }, ...over,
 });

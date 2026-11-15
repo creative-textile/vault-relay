@@ -34,7 +34,7 @@ const sliceBetween = (start, end) => {
 const published = {
   version: '1.5',
   queue: '1.7',
-  file: 'docs/handoff/syn-3-card-queue.md',
+  file: 'docs/PHASES.md',
 };
 
 // Границы берём по задачам, а не по комментариям: границы блоков — якоря сборки,
@@ -73,11 +73,13 @@ assert.match(readTz, /редакция\\s\*\\\*\*\\s\*\(\\d\+\\\.\\d\+\)/, 'но
 assert.match(readTz, /cfn-tz-published/, 'результат кешируется, чтобы не долбить API');
 assert.match(readTz, /return cache && cache\.file === file \? cache : null;/, 'сбой чтения не выдумывает версию');
 
-// ── 4. Шапка очереди действительно в таком виде ──────────────────────────────
-const doc = readFileSync(new URL('../../../docs/handoff/syn-3-card-queue.md', import.meta.url), 'utf8');
+// ── 4. Шапка документа действительно в таком виде ───────────────────────────
+// D-108: до первой миссии гейт читает план фаз; формы «редакция»/«ТЗ» остаются
+// теми же, что у очереди миссии, поэтому проверка не ослаблена — она про форму.
+const doc = readFileSync(new URL('../../../docs/PHASES.md', import.meta.url), 'utf8');
 const head = doc.split('\n').slice(0, 6).join('\n');
-assert.match(head, /редакция\s*1\.\d+/, 'в шапке очереди есть номер редакции');
-assert.match(head, /ТЗ\s*1\.\d+/, 'в шапке очереди есть номер ТЗ');
+assert.match(head, /Версия\s*\**\s*1\.\d+/, 'в шапке плана есть номер версии');
+assert.match(doc.slice(0, 2000), /Ф0|фаза/i, 'план называет фазы');
 
 // ── 5. Гейт подключён к приёмке и классифицирован ────────────────────────────
 assert.match(
@@ -89,7 +91,7 @@ assert.match(src, /kind: "answer-unpublished"/, 'пауза названа св�
 assert.match(src, /"answer-unpublished": "transport",/, 'пауза транспорта, а не Мастера');
 
 // ── 6. Канал публикации существует, а не подразумевается ─────────────────────
-assert.match(src, /queueDoc: "docs\/handoff\/syn-3-card-queue\.md"/, 'место редакции задано конфигом');
+assert.match(src, /queueDoc: "docs\/PHASES\.md"/, 'место редакции задано конфигом');
 assert.match(src, /telemetryRepo: ""/, 'служебные коммиты в проект не пишутся (D-086)');
 
 console.log('ok 1 - tests/relay-publication-gap-smoke.mjs');

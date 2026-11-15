@@ -12,7 +12,7 @@ const rev = PromptCompiler.compile(reviewRequest()).text;
 assert.match(exec, /Kernel/);
 assert.match(exec, /merge-base HEAD origin\/main/);
 assert.match(exec, /gh pr merge <N> --squash/);
-assert.match(exec, /Creative36711\/synapse/);
+assert.match(exec, /creative-textile\/vault/);
 assert.match(exec, /PR без общей истории удалит чужие файлы/);
 
 // Auditor: только чтение, без мержа и без сброса дерева.
@@ -31,8 +31,8 @@ assert.match(coord, /Notion/);
 assert.match(rev, /Ничего не правь|не правь/);
 
 // Другой проект: его репозиторий и base, без старого снимка.
-const other = PromptCompiler.compile(dispatchRequest('Executor', { target: { repo: 'team/synapse', baseBranch: 'release/next' } })).text;
-assert.match(other, /team\/synapse/);
+const other = PromptCompiler.compile(dispatchRequest('Executor', { target: { repo: 'team/vault', baseBranch: 'release/next' } })).text;
+assert.match(other, /team\/vault/);
 assert.match(other, /origin\/release\/next/);
 assert.doesNotMatch(other, /origin\/main/);
 

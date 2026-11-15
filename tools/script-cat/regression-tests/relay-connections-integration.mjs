@@ -331,7 +331,7 @@ function makeHarness(values = initial, activeProfile = undefined) {
 // В новом проекте изменения доступа отзывают ранее выданный допуск; во время
 // фоновой операции сохранить нельзя. Откат ошибки возвращает и допуск.
 {
-  const profile = { id:'project-id', name:'Synapse', driveFolder:'synapse', legacy:false };
+  const profile = { id:'project-id', name:'Vault', driveFolder:'vault', legacy:false };
   const h = makeHarness({ ...initial, 'cfn-project-approved':true }, profile); h.connectionDialog();
   h.type('notion', 'replacement'); h.setWork(1); h.main('save').onclick();
   assert.equal(h.store.get(K.notion), initial[K.notion]); assert.equal(h.store.get('cfn-project-approved'), true);
@@ -340,7 +340,7 @@ function makeHarness(values = initial, activeProfile = undefined) {
   assert.match(h.main('note').textContent, /Допуск проекта снят/);
 }
 {
-  const profile = { id:'project-id', name:'Synapse', driveFolder:'synapse', legacy:false };
+  const profile = { id:'project-id', name:'Vault', driveFolder:'vault', legacy:false };
   const h = makeHarness({ ...initial, 'cfn-project-approved':true }, profile); h.connectionDialog();
   h.type('notion', 'replacement'); h.options.failKeyOnce = K.notion; h.main('save').onclick();
   assert.equal(h.store.get(K.notion), initial[K.notion]); assert.equal(h.store.get('cfn-project-approved'), true);

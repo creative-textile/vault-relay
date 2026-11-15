@@ -147,6 +147,18 @@
       skipCard: (() => { try { return Boolean(skipCardButton()); } catch { return false; } })(),
       panels: (() => { try { return completionPanels().length; } catch { return 0; } })(),
       diagnostics: (() => { try { return composerDiagnostics(); } catch { return null; } })(),
+      // 1.16.1: состояние кнопки Send и факт приёма вставки. Без них снимок
+      // «кнопка не найдена» не отличить от «кнопка серая» и «Send вне панели» —
+      // ровно на этом 12.11 в 23:11 разбор встал.
+      send: {
+        scan: (() => { try { return sendScanSummary(); } catch { return ""; } })(),
+        write: (() => {
+          try {
+            if (typeof lastWrite === "undefined" || !lastWrite) return "не было";
+            return lastWrite.registered === false ? "редактор ввод не принял" : "через execCommand";
+          } catch { return ""; }
+        })(),
+      },
     });
   }
 
@@ -231,8 +243,7 @@
     // проекта, уже выше) и отдельный приватный репозиторий, если Мастер его
     // завёл (`C.telemetryRepo`). Нет репозитория — телеметрия остаётся на Drive,
     // и это не ошибка, а норма.
-    // 09.11 (2-я редакция): репозитории разной видимости — `synapse` публичный,
-    // `synapse-cortex` приватный. Телеметрия содержит тексты карточек, зоны
+    // 09.11 (2-я редакция): репозитории разной видимости. Телеметрия содержит тексты карточек, зоны
     // ролей и куски переписки, поэтому разрешён только приватный получатель.
     // Проверяем один раз на сессию: лишний GET на каждую паузу не нужен.
     const tRepo = String(C.telemetryRepo || "");

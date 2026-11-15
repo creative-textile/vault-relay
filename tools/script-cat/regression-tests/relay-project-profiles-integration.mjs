@@ -10,7 +10,7 @@ const id = (n) => `${String(n).padStart(8, '0')}-1111-4111-8111-${String(n).padS
 const profile = (n, name, repo, branch, driveFolder) => ({ id: id(n), name, repo, branch, driveFolder,
   roles: id(n * 10 + 1), missions: id(n * 10 + 2), requests: id(n * 10 + 3), questions: id(n * 10 + 4),
   pageUrl: 'https://app.notion.com/p/page', questionsUrl: 'https://www.notion.so/database' });
-const A = profile(1, 'Synapse', 'team/synapse', 'release/next', 'synapse');
+const A = profile(1, 'Vault', 'team/vault', 'release/next', 'vault');
 const B = profile(2, 'Atlas', 'team/atlas', 'main', 'atlas');
 raw.set('cfn-project-profiles-v1', [A, B]);
 const getter = (k, fallback) => raw.has(k) ? structuredClone(raw.get(k)) : fallback;
@@ -119,7 +119,7 @@ let sent = [], response = { merged: true, base: { ref: A.branch, repo: { full_na
 const verifyFn = new Function('C', 'ACTIVE_PROFILE', 'URL', 'githubPr', 'request', 'githubHeaders', 'hasMergedClaim', `${pr}\n${verify}\nreturn { projectPrBoundary, verifyMergeClaim };`)(
   { repo: A.repo, branch: A.branch }, { legacy: false }, URL,
   async (repo, number, token) => { sent.push({ repo, number, token }); return response; }, async () => ({}), () => ({}), (result) => result?.merged === true);
-for (const value of ['https://github.com/other/repo/pull/2', 'https://github.com.evil.invalid/team/synapse/pull/2', 'http://github.com/team/synapse/pull/2']) {
+for (const value of ['https://github.com/other/repo/pull/2', 'https://github.com.evil.invalid/team/vault/pull/2', 'http://github.com/team/vault/pull/2']) {
   assert.equal((await verifyFn.verifyMergeClaim({ pr: value }, 'secret')).status, 'boundary');
 }
 assert.equal(sent.length, 0, 'токен не отправляется для чужого PR');
@@ -144,7 +144,7 @@ assert.equal(declinedFor(true).prDeclined({pr:null,merged:true}), true, 'legacy-
 assert.equal(declinedFor(false).prMergeConflict({pr:null,merged:true}), true, 'D-046: противоречие распознано — оно уйдёт в напоминание');
 assert.equal(declinedFor(false).prMergeConflict({pr:null,merged:false}), false, 'D-046: честный «без PR» не трогается');
 assert.equal(declinedFor(false).prMergeConflict({merged:true}), false, 'D-046: пропущенный pr остаётся забывчивостью');
-assert.equal((await verifyFn.verifyMergeClaim({ pr: 'https://github.com/team/synapse/pull/2' }, 'secret')).status, 'merged');
+assert.equal((await verifyFn.verifyMergeClaim({ pr: 'https://github.com/team/vault/pull/2' }, 'secret')).status, 'merged');
 assert.equal(sent[0].repo, A.repo); response = { merged: true, base: { ref: 'main', repo: { full_name: A.repo } } };
 assert.equal((await verifyFn.verifyMergeClaim({ pr: 2 }, 'secret')).status, 'boundary', 'другая базовая ветка не подтверждает работу');
 response = { merged: true }; assert.equal((await verifyFn.verifyMergeClaim({ pr: 2 }, 'secret')).status, 'boundary');

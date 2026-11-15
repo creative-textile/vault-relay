@@ -26,7 +26,7 @@ const norm = (x) => String(x || '').replace(/-/g, '').toLowerCase();
 const K = { pending: 'pending', expect: 'expect', lastSend: 'lastSend', deadSend: 'deadSend', stateV: 'stateV', paused: 'paused', pause: 'pause', errSeen: 'errSeen' };
 const warden = { name: 'Warden', fn: 'Reviewer', id: 'rev-1', url: '/agent/rev-1', status: 'Активна' };
 const reviewer = { name: 'Независимый приёмщик', fn: 'Reviewer', id: 'rev-2', url: '/agent/rev-2', status: 'Активна' };
-const kernel = { name: 'Kernel', fn: 'Executor', id: 'exec-1', url: '/agent/exec-1', status: 'Активна', repo: 'Creative36711/synapse' };
+const kernel = { name: 'Kernel', fn: 'Executor', id: 'exec-1', url: '/agent/exec-1', status: 'Активна', repo: 'creative-textile/vault-core' };
 const auditor = { name: 'Runtime Auditor', fn: 'Auditor', id: 'audit-1', url: '/agent/audit-1', status: 'Активна' };
 const coordinator = { name: 'Coordinator', fn: 'Coordinator', id: 'coord-1', url: '/agent/coord-1', status: 'Активна' };
 const all = [coordinator, warden, reviewer, kernel, auditor];
@@ -77,7 +77,7 @@ function makeDispatch({ active = all, directory = all, freshCard = fixture(), di
       if (directoryError) throw new Error(directoryError);
       return clone(directory);
     },
-    norm, rt, K, C: { repo: 'example/relay-fixture', branch: 'main' }, ACTIVE_PROFILE: { legacy: false, repo: 'example/relay-fixture', branch: 'main', repos: [{ repo: 'Creative36711/synapse', branch: 'main' }, { repo: 'example/relay-fixture', branch: 'main' }] },
+    norm, rt, K, C: { repo: 'example/relay-fixture', branch: 'main' }, ACTIVE_PROFILE: { legacy: false, repo: 'example/relay-fixture', branch: 'main', repos: [{ repo: 'creative-textile/vault-core', branch: 'main' }, { repo: 'example/relay-fixture', branch: 'main' }] },
     GM_getValue: (key, fallback) => storage.has(key) ? storage.get(key) : fallback,
     GM_setValue: (key, value) => storage.set(key, clone(value)),
     notion: async (method, path) => { calls.reads.push({ method, path }); return clone(freshCard); },
@@ -191,7 +191,7 @@ for (const role of [kernel, auditor]) {
   assert.equal(h.calls.patches[0].props['Output Drive File ID'].rich_text[0].text.content, 'NEW-LOG');
   assert.equal(h.storage.get(K.pending).roleId, role.id);
   assert.equal(h.storage.get(K.expect).kind, 'dispatch');
-  if (role === kernel) assert.equal(h.storage.get(K.expect).targetRepo, 'Creative36711/synapse', 'live Notion role repo overrides stale default profile route');
+  if (role === kernel) assert.equal(h.storage.get(K.expect).targetRepo, 'creative-textile/vault-core', 'live Notion role repo overrides stale default profile route');
   assert.match(h.storage.get(K.pending).text, /свежий payload/);
 }
 {

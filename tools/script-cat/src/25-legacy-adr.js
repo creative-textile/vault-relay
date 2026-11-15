@@ -132,8 +132,8 @@
    * репозитория. Это факт, а не догадка.
    *
    * 09.11 (2-я редакция): ролей два репозитория, и документы лежат не там, где
-   * работает роль. `synapse` — публичный репозиторий кода, `synapse-cortex` —
-   * приватный, и в Notion «Репозиторий» роли-приёмки (`Warden`) назван cortex.
+   * работает роль. У Vault репозиторий один (`creative-textile/vault`), и в
+   * Notion «Репозиторий» роли-приёмки (`Warden`) назван именно он.
    * Поэтому читаем не `C.repo` (это репозиторий сессии роли), а
    * `C.docsRepo` → репозиторий роли-приёмки → `C.repo`. Иначе сверка ищет
    * документ не в том репозитории и всегда возвращает «не прочитано».
@@ -152,7 +152,7 @@
     return String(C.repo || "");
   }
 
-  async function publishedTzVersion(file = C.queueDoc || "docs/handoff/syn-3-card-queue.md") {
+  async function publishedTzVersion(file = C.queueDoc || "docs/PHASES.md") {
     const cache = GM_getValue("cfn-tz-published", null);
     const now = Date.now();
     const repo = canonicalTargetRepository(docsRepository());
@@ -166,8 +166,12 @@
       const url = `https://api.github.com/repos/${repo}/contents/${file}?ref=${encodeURIComponent(C.branch || "main")}`;
       const got = await request("GET", url, githubHeaders(token));
       const text = b64Text(got && got.content);
-      const tz = String(text || "").match(/ТЗ\s*\**\s*(\d+\.\d+)/i);
-      const queue = String(text || "").match(/редакция\s*\**\s*(\d+\.\d+)/i);
+      // D-108: план фаз объявляет «Версия 1.0» в шапке; миссии и очереди —
+      // «ТЗ 1.5» и «редакция 1.7». Читаем все три формы, иначе гейт D-086
+      // молча не видит опубликованный номер там, где он есть.
+      const body = String(text || "");
+      const tz = body.match(/ТЗ\s*\**\s*(\d+\.\d+)/i) || body.match(/Версия\s*\**\s*(\d+\.\d+)/i);
+      const queue = body.match(/редакция\s*\**\s*(\d+\.\d+)/i) || body.match(/Версия\s*\**\s*(\d+\.\d+)/i);
       if (!tz && !queue) return null;
       const out = { at: now, file, repo, version: tz ? tz[1] : "", queue: queue ? queue[1] : "" };
       GM_setValue("cfn-tz-published", out);
@@ -423,7 +427,7 @@
     const token = GM_getValue(K.ghToken, "");
     try {
       // D-037: сторож обходит ВСЕ репозитории профиля, а не только главный.
-      // Предложение может лежать во втором репозитории (например, synapse),
+      // Предложение может лежать в другом репозитории (например, в форке),
       // и тогда полный текст с SHA никогда не дописывался бы в вопрос —
       // предохранитель не пропустил бы его к приёмке. 404 папки decisions
       // в одном репозитории не останавливает обход остальных.

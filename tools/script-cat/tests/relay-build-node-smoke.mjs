@@ -31,6 +31,11 @@ const bundle = readFileSync(join(scDir, 'relay.user.js'), 'utf8');
   assert.match(node, /export const CHECKS = \[/, 'список проверок записан в коде');
   assert.match(node, /shell: false/, 'оболочки нет: argv передаётся как есть');
   assert.equal(ALLOWED_PATHS.includes('tools/script-cat/'), true, 'зона правок названа явно');
+  // D-108: инструменты фазы 0 (Blender-пайплайн) живут в репозитории, а не в /tmp,
+  // иначе узел сборки отвергал бы подготовительные артефакты.
+  assert.equal(ALLOWED_PATHS.includes('tools/modeling/'), true, '3D-пайплайн — часть разрешённой зоны');
+  // D-109: хромакей-пайплайн (вырезание фона у референсов) — там же, рядом с моделированием.
+  assert.equal(ALLOWED_PATHS.includes('tools/media/'), true, 'хромакей-пайплайн — часть разрешённой зоны');
 }
 
 // ── 2. Факты бандла читаются из независимых источников ─────────────────────

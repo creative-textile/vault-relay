@@ -194,10 +194,10 @@ const ACTIVE = [
 
 // ── 8. Админ-роли и роли вне allowlist по-прежнему отвергаются ────────────
 {
-  const cfg = { agentProvisionEnabled: true, agentProvisionRepoAllowlist: ['creative36711/synapse'], agentProvisionMaxJobs: 3 };
+  const cfg = { agentProvisionEnabled: true, agentProvisionRepoAllowlist: ['creative-textile/vault-core'], agentProvisionMaxJobs: 3 };
   const row = (over = {}) => ({
     pageId: 'a709d6df-4698-4a98-b111-90d22de42894', id: 'agent-1', name: 'Build/Release', fn: 'Executor',
-    status: 'Ждёт', url: '', repo: 'Creative36711/synapse', agentAdmin: false, agentState: 'запрошен', ...over,
+    status: 'Ждёт', url: '', repo: 'creative-textile/vault-core', agentAdmin: false, agentState: 'запрошен', ...over,
   });
   assert.equal(provisionApi.provisionCandidateFromRow(row(), cfg).ok, true, 'обычная строка — кандидат');
   assert.match(provisionApi.provisionCandidateFromRow(row({ agentAdmin: true }), cfg).reason,

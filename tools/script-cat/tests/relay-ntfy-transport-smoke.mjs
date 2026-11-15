@@ -40,12 +40,12 @@ const load = (stubs = {}) =>
 
 // 3.1. Старый топик Мастера проходит и в исходном виде, и ссылкой.
 const { normalizeNtfyTopic } = load();
-assert.equal(normalizeNtfyTopic('arena-creative36711'), 'arena-creative36711', 'простое имя');
-assert.equal(normalizeNtfyTopic('  arena-creative36711 \n'), 'arena-creative36711', 'пробелы обрезаются');
-assert.equal(normalizeNtfyTopic('https://ntfy.sh/arena-creative36711'), 'arena-creative36711', 'ссылка ntfy.sh');
-assert.equal(normalizeNtfyTopic('https://ntfy.sh/arena-creative36711?x=1#y'), 'arena-creative36711', 'ссылка с query');
-assert.equal(normalizeNtfyTopic('ntfy.sh/arena-creative36711'), 'arena-creative36711', 'имя с префиксом');
-assert.equal(normalizeNtfyTopic('https://ntfy.sh/arena-creative36711/'), 'arena-creative36711', 'ссылка со слешем');
+assert.equal(normalizeNtfyTopic('arena-vault'), 'arena-vault', 'простое имя');
+assert.equal(normalizeNtfyTopic('  arena-vault \n'), 'arena-vault', 'пробелы обрезаются');
+assert.equal(normalizeNtfyTopic('https://ntfy.sh/arena-vault'), 'arena-vault', 'ссылка ntfy.sh');
+assert.equal(normalizeNtfyTopic('https://ntfy.sh/arena-vault?x=1#y'), 'arena-vault', 'ссылка с query');
+assert.equal(normalizeNtfyTopic('ntfy.sh/arena-vault'), 'arena-vault', 'имя с префиксом');
+assert.equal(normalizeNtfyTopic('https://ntfy.sh/arena-vault/'), 'arena-vault', 'ссылка со слешем');
 assert.equal(normalizeNtfyTopic(''), '', 'пусто — выключено');
 assert.equal(normalizeNtfyTopic('плохой топик!'), '', 'недопустимые символы не уходят на сервер');
 
@@ -60,7 +60,7 @@ const ok = load({
     throw new Error('fetch не должен вызываться, если GM сработал');
   },
 });
-const sent = await ok.ntfyPublish('https://ntfy.sh/arena-creative36711', '', {
+const sent = await ok.ntfyPublish('https://ntfy.sh/arena-vault', '', {
   message: 'Тихий тест: привет, Мастер.',
   title: 'Relay: тихий тест',
   priority: 2,
@@ -75,7 +75,7 @@ for (const value of Object.values(posts[0].headers)) {
   assert.ok(!/[^\x00-\x7F]/.test(String(value)), `в заголовке только ASCII: ${value}`);
 }
 const body = JSON.parse(posts[0].data);
-assert.equal(body.topic, 'arena-creative36711', 'топик нормализован в теле');
+assert.equal(body.topic, 'arena-vault', 'топик нормализован в теле');
 assert.equal(body.title, 'Relay: тихий тест', 'кириллический заголовок идёт в теле');
 assert.equal(body.priority, 2, 'тихий приоритет');
 assert.deepEqual(body.tags, ['memo'], 'теги массивом');
@@ -89,7 +89,7 @@ const fallback = load({
     return { ok: true, status: 200, text: async () => '{}' };
   },
 });
-const second = await fallback.ntfyPublish('arena-creative36711', 'tk_1', { message: 'x', title: 'y', priority: 5 });
+const second = await fallback.ntfyPublish('arena-vault', 'tk_1', { message: 'x', title: 'y', priority: 5 });
 assert.equal(second.via, 'fetch', 'второй путь — fetch');
 assert.equal(viaFetch.url, 'https://ntfy.sh/', 'fetch тоже на корень');
 assert.equal(viaFetch.init.headers.Authorization, 'Bearer tk_1', 'токен уходит как Bearer');
@@ -100,7 +100,7 @@ const broken = load({
   fetch: async () => ({ ok: false, status: 403, text: async () => 'forbidden' }),
 });
 await assert.rejects(
-  () => broken.ntfyPublish('arena-creative36711', '', { message: 'x' }),
+  () => broken.ntfyPublish('arena-vault', '', { message: 'x' }),
   (e) => /GM: таймаут/.test(e.message) && /fetch: HTTP 403/.test(e.message),
   'ошибка называет оба пути',
 );

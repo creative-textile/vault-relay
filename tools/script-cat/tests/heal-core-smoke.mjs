@@ -193,7 +193,7 @@ for (const kind of ['prompt-compile', 'orphan-dispatch', 'delivery-state-lost', 
     at: '2026-11-08T20:00:00.000Z',
     version: '1.13.0',
     fingerprint: 'deadbeefdeadbeef',
-    profile: 'synapse',
+    profile: 'vault',
     incident: { kind: 'prompt-compile', ref: 'a709d6df-4698-4a98-b111-90d22de42894', reason: 'Промпт не собран' },
     verdict: { cls: 'transport', route: 'maintainer', why: 'поломка транспорта' },
     snapshot: {

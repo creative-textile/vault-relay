@@ -150,7 +150,7 @@ const marker = (data) => `Разбор петли текстом.\nCF_ARBITER_RE
     arbiter: { cardId: CARD, cardTitle: 'SYN-2 · S-4 · Мини-игра арены', role: 'Executor Core',
       redispatchCount: 3, redispatchLimit: 3, windowHours: 6, reason: 'её видели в Rework',
       state: 'Ready', check: 'fail', answer: 'Scope blocker — не готов к мержу: нужен game/cli/main.gd вне зоны S-4.',
-      pr: 'https://github.com/Creative36711/synapse/pull/26', prState: 'draft, открыт',
+      pr: 'https://github.com/creative-textile/vault-core/pull/26', prState: 'draft, открыт',
       attempts: '07.11 12:05 · dispatch · executor.card · Rework', queue: '1 Ready, 1 Rework' },
     delivery: { tier: 'full' },
   });
@@ -180,7 +180,7 @@ const marker = (data) => `Разбор петли текстом.\nCF_ARBITER_RE
 
 // ── 2. Петля уходит арбитру, а не в паузу ──────────────────────────────────
 {
-  const h = harness({ answer: 'Готово: arena.exe --seed 7 детерминирован.', pr: 'https://github.com/Creative36711/synapse/pull/26' });
+  const h = harness({ answer: 'Готово: arena.exe --seed 7 детерминирован.', pr: 'https://github.com/creative-textile/vault-core/pull/26' });
   // Транспорт уже видел три перевыдачи за окно.
   h.store.set('cfn-redispatch:' + CARD, [Date.now() - 1000, Date.now() - 500, Date.now()]);
   const escalated = await h.api.escalateToWarden(h.pages.get(CARD), 'её видели в Rework');

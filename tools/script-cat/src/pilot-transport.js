@@ -8,7 +8,7 @@
   const PILOT_TIMEOUT_MS = 4 * 60 * 60 * 1000; // 4 часа до вызова Мастера
   const PILOT_FORBIDDEN = [
     /CF_[A-Z]+_RESULT/, /\bCF_[A-Z_]+\b/, /notion/i, /cortex/i,
-    /REGULATION/, /WARDEN/i, /DECISIONS/, /synapse-cortex/i,
+    /РЕГЛАМЕНТ/i, /WARDEN/i, /DECISIONS/, /notion\.so/i,
   ];
   const pilotBriefClean = (brief) => {
     const text = String(brief || "");
@@ -37,7 +37,7 @@
     let host = ""; let path = "";
     try { const u = new URL(clean); host = u.host; path = u.pathname; } catch { return { ok: false, error: "pilot URL не разбирается" }; }
     if (!/arena|e2b|app/i.test(host)) return { ok: false, error: "pilot URL не похож на страницу Arena-агента" };
-    if (!/^[0-9a-f]{40}$/i.test(String(startSha || ""))) return { ok: false, error: "startSha должен быть 40-hex SHA коммита synapse" };
+    if (!/^[0-9a-f]{40}$/i.test(String(startSha || ""))) return { ok: false, error: "startSha должен быть 40-hex SHA коммита Vault" };
     if (!pilotBriefClean(brief)) return { ok: false, error: "бриф содержит внутренние токены (CF_/Notion/cortex/REGULATION/WARDEN/DECISIONS) или пуст" };
     const variant = pilotVariant(brief);
     if (!["A", "B", "C"].includes(variant)) return { ok: false, error: "бриф должен быть помечен вариантом A, B или C" };
@@ -67,7 +67,7 @@
     if (!pilot) return { ok: false, error: "пилот не зарегистрирован" };
     const envelope = PromptCompiler.compile({
       kind: "pilot", role: { fn: "pilot", name: `pilot-${pilot.variant}` },
-      pilot: { brief: pilot.brief, repo: "Creative36711/synapse", startSha: pilot.startSha },
+      pilot: { brief: pilot.brief, repo: "creative-textile/vault", startSha: pilot.startSha },
       delivery: { tier: "full" },
     });
     if (!envelope.ok) return { ok: false, error: envelope.error.message };

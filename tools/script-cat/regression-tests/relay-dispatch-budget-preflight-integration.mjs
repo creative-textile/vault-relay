@@ -27,8 +27,8 @@ const text = (value) => ({ rich_text: [{ plain_text: value }] });
 const title = (value) => ({ title: [{ plain_text: value }] });
 
 // Фикстура — дословные поля боевой карточки, без payload и без сетевых вызовов.
-assert.equal(fixture.acceptance.length, 4232);
-assert.equal(fixture.scope.length, 1435);
+assert.equal(fixture.acceptance.length, 4236);
+assert.equal(fixture.scope.length, 1431);
 assert.equal(fixture.invariants.length, 1035);
 assert.equal(fixture.intent.length, 626);
 const card = {
@@ -62,7 +62,7 @@ const promptTarget = (ctx = {}) => ({ repo: ctx.repo || '', baseBranch: ctx.bran
 const executorPrompt = new Function(
   'rt', 'taskTitle', 'promptRole', 'promptTarget', 'PromptCompiler', 'C', 'pause', 'budgetBreakdownLine',
   `${cut('  const taskFacts =', '\n  /** Ссылка на журнал последнего ответа')}return executorPrompt;`,
-)(rt, taskTitle, promptRole, promptTarget, PromptCompiler, { driveFolder: 'synapse', payloadInlineMax: 1500 }, (message, ctx) => pauses.push({ message, ...ctx }), budgetBreakdownLine);
+)(rt, taskTitle, promptRole, promptTarget, PromptCompiler, { driveFolder: 'vault', payloadInlineMax: 1500 }, (message, ctx) => pauses.push({ message, ...ctx }), budgetBreakdownLine);
 
 // Total-отказ показывает размеры fact-блоков, а не нулевой overhead marker/git.
 let earlyReason = '';
@@ -74,7 +74,7 @@ assert.match(earlyReason, /budget_exceeded/);
 assert.match(earlyReason, /total \d+ > жёсткого лимита 8000/, 'названы фактический размер и жёсткий лимит (D-048)');
 // В диагностике chars блока включает подпись поля; длины самих полей закреплены выше.
 assert.match(earlyReason, /task\.acceptance 42\d\d/);
-assert.match(earlyReason, /task\.scope 1442/);
+assert.match(earlyReason, /task\.scope 1438/);
 assert.match(earlyReason, /task\.invariants 1047/);
 assert.match(earlyReason, /task\.intent 637/);
 assert.doesNotMatch(earlyReason, /marker\.agent|git\.executor/, 'нулевой overhead не выдаётся за причину total-отказа');

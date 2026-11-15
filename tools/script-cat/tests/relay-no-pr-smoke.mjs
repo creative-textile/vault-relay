@@ -35,7 +35,7 @@ assert.equal(declined({ pr: 37 }), false);
 assert.equal(declined(null), false);
 assert.equal(noneValue(null), true, 'явный null — заявка, а не забывчивость');
 assert.equal(noneValue('null'), true);
-assert.equal(noneValue('https://github.com/Creative36711/synapse/pull/17'), false);
+assert.equal(noneValue('https://github.com/creative-textile/vault-core/pull/17'), false);
 assert.equal(noneValue(''), false, 'пустая строка — не заявка');
 
 // 2. D-046: «pr:null + merged:true» — противоречие маркера, а не законный
@@ -52,7 +52,7 @@ const k34 = {
 assert.equal(conflict(k34), true, 'дословный маркер K-34 распознан как противоречие');
 assert.equal(conflict({ ...k34, pr: 'none' }), true, '"none" + merged:true — тоже противоречие');
 assert.equal(conflict({ ...k34, pr: '', merged: true }), false, 'пустой pr — забывчивость, её держит projectPrBoundary');
-assert.equal(conflict({ ...k34, pr: 'https://github.com/Creative36711/synapse/pull/17' }), false);
+assert.equal(conflict({ ...k34, pr: 'https://github.com/creative-textile/vault-core/pull/17' }), false);
 assert.equal(conflict({ ...k34, merged: false }), false, 'merged:false законен');
 assert.equal(conflict({ pr: null }), false, 'без заявки о мерже противоречия нет');
 assert.equal(conflict({ merged: true }), false, 'пропущенный pr не маскируется: его ловит projectPrBoundary');

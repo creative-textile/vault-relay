@@ -269,7 +269,7 @@ const baseExpect = (over = {}) => ({
 // ── pilot continuation: без CF_* и внутренних ссылок, свой namespace ─────────
 {
   const pilot = { id: 'pilot-1', variant: 'A', url: 'https://arena.ai/pilot' };
-  const wait = { id: 'pilot-1', url: 'https://arena.ai/pilot', sentAt: Date.now() - 1000, watermark: 'pwm-0', status: 'running', prompt: { profileId: 'pilot.synapse', metrics: { chars: 200, utf8Bytes: 200 } } };
+  const wait = { id: 'pilot-1', url: 'https://arena.ai/pilot', sentAt: Date.now() - 1000, watermark: 'pwm-0', status: 'running', prompt: { profileId: 'pilot.vault', metrics: { chars: 200, utf8Bytes: 200 } } };
   const env = buildEnv({ pilots: [pilot] });
   env.store.set('pw:pilot-1', wait);
   const handled = await env.api.handleToolCallLimit();
@@ -278,7 +278,7 @@ const baseExpect = (over = {}) => ({
   assert.equal(w.toolLimitContinuations, 1);
   const sent = env.delivered.at(-1);
   assert.ok(!/CF_/.test(sent), 'pilot continuation без CF_*');
-  assert.ok(!/notion|cortex|REGULATION|WARDEN|DECISIONS|synapse-cortex/i.test(sent), 'pilot без внутренних ссылок');
+  assert.ok(!/notion|cortex|REGULATION|WARDEN|DECISIONS|vault/i.test(sent), 'pilot без внутренних ссылок');
   const j = env.journal.find((x) => x.outcome === 'tool_limit_continued');
   assert.equal(j.profileId, 'continuation.pilot');
   assert.equal(j.kind, 'pilot');

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Relay — передача хода между агентами
 // @namespace    https://arena.ai/
-// @version      1.14.33
+// @version      1.16.1
 // @description  Цикл Координатор → исполнитель → Координатор: агент сам коммитит, пушит и мержит PR; ScriptCat ждёт мерж и нажимает Continue.
 // @match        https://arena.ai/*
 // @match        https://www.arena.ai/*
@@ -77,11 +77,11 @@
     pageUrl: "",
     // Краткий регламент вшивается сборкой из docs/regulation-digest.md: агент получает
     // правила вместе с заданием, а страница по pageUrl остаётся справочником для деталей.
-    regulationDigest: "# Регламент · краткая версия (вход для агентов)\n\nВерсия 1.5 · 2026-11-03. Вход, а не весь регламент: полная версия — страница «Регламент команды\nSynapse» в Notion (ссылка в промпте), репозиторная копия — `docs/REGULATION.md`. При расхождении\nверна полная. Этот текст уже пришёл в твоём задании: страницу регламента открывать и листать\nне нужно.\n\n## 1. Роли (D-021, имена заморожены)\n\n| Роль | Функция | Репозиторий | Делает |\n|---|---|---|---|\n| **Мастер** | Owner | — | направление, доступы, лицензии, деньги, финальные ADR; секреты вводит только он |\n| **Warden** | Reviewer | cortex | ТЗ миссий, приёмка по оракулу (accept/rework/master), ответы на вопросы и ADR |\n| **Coordinator** | Coordinator | cortex | очередь `Draft → Ready`, нарезка карточек, «Итог»; код и PR не пишет |\n| **Executor Core** | Executor | только `synapse` | карточки ядра: CLI, валидатор, рантайм, примеры, локали, шрифты |\n| **Executor Platform** | Executor | cortex | платформа мастерской, backend, сервисы; в миссиях ядра не участвует |\n| **Contract Architect** | Executor | только `synapse` | контракты и ADR ядра: `GameSpec`, манифест модуля, коды ошибок; фичи не пишет |\n| **Spec Auditor** | Auditor | cortex | независимая проверка оракула и содержания ошибок; код не правит |\n| **Locale Auditor** | Auditor | только `synapse` | глоссарий, каталоги, i18n-проверки; переводов не пишет |\n\nСтарые имена (`Executor Cortex`, `Auditor`, `Architect`) — устарели.\n\n## 2. Репозитории и доступы (D-022)\n\nРабота идёт в двух репозиториях — это разделение, а не дубль:\n\n- **`Creative36711/synapse`** — открытое ядро (MIT): конструктор игр, CLI, рантайм, локали и\n  **инструменты агентов** (Godot, Blender, хромакей). Пишут только три роли ядра.\n- **`Creative36711/synapse-cortex`** — закрытая часть: транспорт ScriptCat, платформа мастерской,\n  коммерция, документы процесса. Пишут `Warden` и `Executor Platform`, читают `Coordinator` и\n  `Spec Auditor`; роли ядра его **не видят**.\n\nДоступы:\n\n- Роли ядра видят только `synapse`; роли cortex видят оба, но пишут только в cortex.\n- Требование для роли ядра — **текстом в карточке**: ссылка на файл в cortex бесполезна,\n  ссылка на cortex внутри `synapse` — дефект (INV-1).\n- Свой репозиторий и ветка — в техблоке задания. Нужен файл, которого не видишь, — ошибка\n  карточки: пиши в отчёт, ход не останавливай.\n- Согласованность ядра и платформы проверяет только Warden: он читает оба.\n\n## 3. Инструменты уже в репозитории — ставить с нуля не нужно\n\nГотовые сборки лежат в `Creative36711/synapse`: движок не скачивают и не компилируют, работает\nв песочнице без интернета, GPU и экрана.\n\n- `tools/godot/install.sh --check` — Godot 4.7.2 (2D+3D) + SwiftShader (Vulkan на CPU, офскрин,\n  скриншоты). Ставится в `/tmp/synapse-godot`; `/tmp` не переживает сессию — повтори в начале хода.\n- `tools/godot/agent_bridge/` — управление запущенной игрой из shell и скриншоты по шагам.\n- `tools/modeling/setup_bpy.sh --check` — Blender 4.5 без экрана (`bpy`): модели, GLB, Cycles.\n- `tools/media/setup.sh --check` — хромакей `#00FF00` для ассетов.\n\nИнструкция — `AGENTS.md` в корне репозитория: читать до первой правки. Пересборка движка\n(`build_from_source.sh`) — только отдельной карточкой.\n\n## 4. Зоны и гейты\n\n| Зона | Что можно |\n|---|---|\n| Своя | править всё, что проходит гейт |\n| Чужая | только читать; правка — карточкой владельцу |\n| Оракул | только дополнять; ослаблять нельзя никому, включая Warden и Coordinator |\n\n- `synapse/**` — пишут три роли ядра. Гейт: PR в `main`, merge после зелёного оракула карточки.\n- `synapse-cortex/**` — пишут Warden и Executor Platform; Coordinator и Spec Auditor читают.\n  Гейт: PR в `main` cortex, merge после приёмки Warden.\n- `tools/script-cat/**` — защищённая зона: только отдельной карточкой/миссией, не «под проект».\n- Секреты (токены Notion/GitHub, ключ шлюза, реестр) не попадают в чат, логи, документы и Git.\n\n## 5. Цикл хода\n\n1. Warden пишет ТЗ → строка в «Миссиях». 2. Coordinator: `Draft → Ready` и выдача хода.\n3. Transport пишет лог в Drive, карточка идёт `Running → Submitted`. 4. Исполнитель завершает\nотчёт маркером `CF_AGENT_RESULT` с реальными `dispatch_id`/`run_id`; `merged: true` — только после\nфактического merge. 5. Coordinator: `Accepted` или `Rework` с причиной. 6. `next: \"done\"` —\nпередача Warden. 7. Warden: `accept` / `rework` / `master`. 8. `master` — только когда без\nМастера физически нельзя.\n\nЗелёная карточка не заменяет финальный оракул миссии. Маркер не заменяет отчёт.\n\nФормат финальной строки всегда стоит в самом конце задания — читай его там, а не по памяти.\nНе восстанавливай маркер из старых миссий, чужих баз и Drive: формат из другого проекта хуже,\nчем честное «маркер не виден». Если строки формата нет — сдай отчёт и скажи об этом.\n\n## 6. Доказательство вместо отчёта\n\n`not run`, тайм-аут, зелёный CI и мок **не равны** pass. Карточка закрывается командой, кодом\nвозврата, артефактом и SHA. Визуальный критерий — агент сам открыл PNG и описал, что видит.\n\nОракул берётся из ТЗ миссии и поля Acceptance карточки: платформенные — `npm run verify` (успех =\nкод 0 и `# fail 0`), карточки ядра — команды из ТЗ (см. §3), i18n-проверки, прогон примера.\n\n## 7. Вопросы и ADR\n\nВопрос — только полем `question` в маркере, с вариантом по умолчанию (по нему работа идёт сразу).\nНеоднозначность решай сам: минимальное изменение + строка «Допущение: …» в отчёт. Изменение\nконтракта, оракула или границ продукта — предложение `ADR:` с тремя вариантами и `default:\n«оставить как есть»`; срок и дефолт решением не являются. Опрос «можно?» — остановка хода.\n\nБез Мастера не решается: лицензии и ToS, деньги и комиссии, платные серверы, исполнение\nпользовательского кода на платформе, целевая аудитория, доступы и аккаунты.\n\n## 8. Запреты фаз 0–4\n\nНе строить платежи, каталог, загрузку пакетов, аккаунты до их фаз. Не запускать пользовательский\nкод на платформе. Не обещать авторам долю от монетизации, не ограничивать экспорт игр, не вводить\nвиртуальную валюту и комиссию с внешних транзакций. Не разворачивать платную инфраструктуру без\nлимита. Не называть ядро open source без одобренной OSI лицензии. Не создавать пустые сервисы\n«под будущие фазы».\n\n## 9. Мультиязычность (не «потом»)\n\n8 локалей: `en` (по умолчанию, юридически аутентичен), `ru`, `zh-Hans`, `ja`, `pt-BR`, `de`, `fr`,\n`ko`. Пользовательский текст — только в каталогах перевода; диагностика — код + параметры, текст\nиз каталога. Смена локали не меняет правил игры. Нативных ревьюеров нет: перевод и проверка — силами\nИИ-агентов.",
+    regulationDigest: "# Регламент · краткая версия (вход для агентов)\n\nВерсия 1.6 · 2026-11-12. Вход, а не весь регламент: полная версия — страница «Регламент команды\nVault» в Notion (ссылка в промпте), репозиторная копия — `docs/REGULATION.md`. При расхождении\nверна полная. Этот текст уже пришёл в твоём задании: страницу регламента открывать и листать\nне нужно.\n\n## 1. Роли (имена заморожены для Vault)\n\n| Роль | Функция | Делает |\n|---|---|---|\n| **Мастер** | Owner | направление, доступы, лицензии, деньги, финальные ADR; секреты и боевые ключи вводит только он |\n| **Warden** | Reviewer | ТЗ миссий, приёмка по оракулу (accept/rework/master), ответы на вопросы и ADR |\n| **Coordinator** | Coordinator | очередь `Draft → Ready`, нарезка карточек, «Итог»; код и PR не пишет |\n| **Executor App** | Executor | фронтенд, бот, API и сервисы продукта, кроме платежей |\n| **Executor Chain** | Executor | TON, BEP-20 и ERC-20: приём депозитов, выводы, сверка ончейн |\n| **Data & Ledger Architect** | Executor | схема PostgreSQL, миграции, целостность балансов и журналов |\n| **Platform Architect** | Executor | инфраструктура, конфиги, деплой, наблюдаемость |\n| **Spec Auditor** | Auditor | независимая проверка по артефактам (команда, rc, SHA), а не по отчёту |\n| **Security & Payments Auditor** | Auditor | вето на merge всего, что трогает деньги, ключи и выводы |\n| **Locale & UX Auditor** | Auditor | локали, тексты, доступность интерфейса |\n| **Transport Maintainer** | Maintainer | ScriptCat и шлюз Drive: отдельные карточки, не «по ходу» |\n\nРоль без строки в базе «Роли» не существует: имя, функция, зона и гейт берутся оттуда.\n\n## 2. Один репозиторий (D-022)\n\nПроект живёт в **`creative-textile/vault`** — это единственный репозиторий кода, документов и\nтранспорта. Отдельного «закрытого» репозитория нет: границы задаются зонами ролей и гейтами, а\nне видимостью репозитория. Ссылка на посторонний репозиторий вместо цели — дефект карточки.\n\n- Свой репозиторий и ветка — в техблоке задания. Ветка сессии — та, что выдана; `main` не трогать\n  напрямую.\n- Нужен файл, которого не видишь, — ошибка карточки: пиши в отчёт, ход не останавливай.\n- Секреты (токены Notion/GitHub, ключ шлюза, ключи кошельков, пароли) не попадают в чат, логи,\n  документы и Git. Боевые значения вводит только Мастер.\n\n## 3. Инструменты уже в репозитории\n\n- Транспорт агентов — `tools/script-cat/**`: сборка `node tools/script-cat/build.mjs`, проверка\n  `node tools/script-cat/build.mjs --check`, пробы `npm test` / `npm run test:regression`.\n- Узел проверки — `tools/relay-build.mjs`, сторож — `tools/relay-watchdog.mjs`.\n- Продукт — `backend/`, `frontend/`, `bot/`, база — `backend/src/db/**`, схема — `init.sql`.\n- Ставить с нуля не нужно ничего: сначала читай `README.md` и `docs/agents/onboarding.md`.\n\n## 4. Зоны и гейты\n\n| Зона | Что можно |\n|---|---|\n| Своя | править всё, что проходит гейт |\n| Чужая | только читать; правка — карточкой владельцу |\n| Оракул | только дополнять; ослаблять нельзя никому, включая Warden и Coordinator |\n\n- `tools/script-cat/**` — защищённая зона: только отдельной карточкой Transport Maintainer.\n- Деньги и выводы (`backend/src/services/ton.ts`, `services/chain/**`, админ-выводы): гейт —\n  зелёный оракул **и** письменная проверка Security & Payments Auditor; без неё merge запрещён.\n- Гейт любой карточки — PR в `main` после зелёного оракула. Merge делает исполнитель, а не\n  приёмка; `merged: true` — только после фактического merge.\n\n## 5. Фазы, миссии, цикл хода\n\nФаза — рамка, миссия — работа внутри рамки. План фаз — `docs/PHASES.md`; сейчас активна **Ф1\n«Ядро продукта и 3D»**, первая миссия — **V-1-1** (`docs/missions/V-1-1.md`): пересобрать сейф,\nракету и монету под бюджет телефона. Продуктовый код открыт **только в границах scope миссии**;\nвсё остальное по-прежнему заморожено. Миссия начинается только после ТЗ Warden:\n`docs/missions/TEMPLATE.md`, архив старых — в `docs/missions/archive/`.\n\nЦикл хода. 1. Warden пишет ТЗ → строка в «Миссиях». 2. Coordinator: `Draft → Ready` и выдача хода.\n3. Transport пишет лог в Drive, карточка идёт `Running → Submitted`. 4. Исполнитель завершает\nотчёт маркером `CF_AGENT_RESULT` с реальными `dispatch_id`/`run_id`; `merged: true` — только после\nфактического merge. 5. Coordinator: `Accepted` или `Rework` с причиной. 6. `next: \"done\"` —\nпередача Warden. 7. Warden: `accept` / `rework` / `master`. 8. `master` — только когда без\nМастера физически нельзя.\n\nЗелёная карточка не заменяет финальный оракул миссии. Маркер не заменяет отчёт.\nФормат финальной строки всегда стоит в самом конце задания — читай его там, а не по памяти.\nЕсли строки формата нет — сдай отчёт и скажи об этом.\n\n## 5a. Визуал: SVG или генерация изображения (D-111)\n\nИнструмент выбирается по природе картинки, а не по привычке: **иконки, лого, пиктограммы UI,\nрамки, болты, слоты, диаграммы — SVG** (вектор, чёткий на любом DPI, цвет из палитры, ≤20 КБ);\n**фоны, ключевые кадры, атмосфера, обложки, референсы, текстуры — генерация изображения**\n(свет и материал, которые вектор даст «пластиком»); **объём и силуэт — Blender** (`tools/modeling/`),\nкартинка 3D не заменяет. Сгенерированное изображение агент **открывает глазами** до сдачи:\nсилуэт читается в 128 px, палитра из `docs/art-direction.md` §4, фон пригоден для вырезания.\nPNG вместо иконки или вектор вместо ключевого кадра — дефект, а не вкусовщина. Лицензии:\nсвоё — без атрибуции, скачанное — строка в кредитах, иначе файла нет.\n\n## 6. Доказательство вместо отчёта\n\n`not run`, тайм-аут, зелёный CI и мок **не равны** pass. Карточка закрывается командой, кодом\nвозврата, артефактом и SHA. Визуальный критерий — агент сам открыл PNG и описал, что видит.\n\nОракул Vault: `npm run verify` (успех = код 0 и `# fail 0`) для продукта; для транспорта —\n`npm run scriptcat:check`, `npm run scriptcat:guard`, `npm test`, `npm run test:regression`;\nдля схемы — двойной прогон `init.sql` + `schema-check` на PostgreSQL 16; для платежей —\nпрогон на testnet с хешем транзакции и сверкой баланса.\n\n## 7. Деньги и режимы\n\nТри положения проекта, переключает Мастер, не агент: **demo → testnet → mainnet**. В demo ничего\nреального не двигается; в testnet платёж доказывается на тестовой сети; в mainnet деньги реальны.\nАгент не «включает» боевой режим и не вводит боевые ключи — он готовит код и проверки, а переключает\nМастер. Вывод средств идемпотентен, сверяется ончейн и не может быть выполнен дважды.\n\n## 8. Вопросы и ADR\n\nВопрос — только полем `question` в маркере, с вариантом по умолчанию (по нему работа идёт сразу).\nНеоднозначность решай сам: минимальное изменение + строка «Допущение: …» в отчёт. Изменение\nконтракта, оракула или границ продукта — предложение `ADR:` с тремя вариантами и `default:\n«оставить как есть»`; срок и дефолт решением не являются. Опрос «можно?» — остановка хода.\n\nБез Мастера не решается: лицензии и ToS, деньги и комиссии, платные серверы, юридические limits\n(в том числе азартные механики), целевая аудитория, доступы и аккаунты.\n\n## 9. Запреты\n\nНе включать боевые платежи без Мастера. Не хранить секреты в Git. Не ослаблять оракул. Не\nсоздавать пустые сервисы «под будущие фазы». Не обещать пользователю выплат, которых нет в коде.\nНе менять чужие зоны мимо карточек. Не выходить за scope миссии. Не ставить тяжёлый\nинструмент «руками в /tmp»: только скриптом из репозитория с проверкой версии/хеша — песочница\nоткатывается.\n\n## 10. Язык\n\nДокументы процесса и общение с Мастером — по-русски. Код, идентификаторы и коммиты — по-английски.\n\nПродукт — **два языка: ru и en** (D-112/D-114), база — русский. Новый текст UI не хардкодь в\nразметку: строки отдельно от логики, суммы и даты через форматтер с локалью, плюрализация по\nчислу. Язык определяется по `language_code` Telegram (`en` → en, всё остальное → ru); ручной выбор\nигрока сильнее, молча язык не меняется. Названия игр **переводятся** (Сейф → Safe, Ракета → Rocket,\nДуэль → Duel), в английском UI **кириллицы нет нигде**; исключение — знак Vault. Юридически значима\nрусская редакция. Диагностика — код + параметры. Существующий текст переносится отдельной миссией.",
     // D-073: отпечаток сборки вшивает build.mjs (SHA-256 источника). Номер версии
     // говорит «какой выпуск», отпечаток — «какая именно сборка»: без него проверка
     // «работает новая версия, а не прежняя под новым номером» невозможна.
-    buildFingerprint: "f75ae4376dd54759",
+    buildFingerprint: "91ec82766cbd6922",
     repo: "", // для ссылки на PR из номера
     tickMs: 15000,
     mergeGraceMs: 90000, // сколько ждём мерж, прежде чем нажать кнопки за агента
@@ -111,6 +111,12 @@
     composerGraceMs: 8000, // сколько ждём возврата поля ввода, если оно исчезло при перерисовке
     sendRetries: 3, // сколько тиков ждём дорисовку страницы, прежде чем звать Мастера
     sendReadyMs: 20000, // столько ждём активную кнопку Send на дорисовывающейся странице
+    // 1.16.1: поле непустое, а ввод не зарегистрирован (запасной `textContent`).
+    // Ждать Send в этом состоянии бессмысленно, поэтому поле лечится
+    // перевставкой — не больше sendHealMax раз и только по признаку самого
+    // writePrompt. Окно — чтобы старая запись не считалась про это поле.
+    sendHealMax: 2,
+    sendHealWindowMs: 45000, // вставка старше 45 с уже не про это ожидание
     clickReadyMs: 8000, // столько ждём кнопку, прежде чем считать её недоступной
     pendingTtlMs: 600000, // отправка старше 10 минут не досылается: адресат её не получил
     undeliveredTtlMs: 7200000, // неотправленное задание ждёт Мастера два часа, а не десять минут
@@ -149,14 +155,16 @@
     // репозиторий проекта не должен получать служебные коммиты мимо приёмки.
     // Если нужен git-канал — отдельный приватный репозиторий, а не проект.
     telemetryRepo: "",
-    // D-086: репозиторий, где живут документы процесса (docs/). По умолчанию —
-    // репозиторий самой роли Warden из базы «Роли»: он и назван в Notion
-    // (`synapse-cortex`). Переменная нужна там, где роль сидит в другом
-    // репозитории (например, `synapse`), а редакции ТЗ всё равно лежат в cortex.
+    // D-086: репозиторий, где живут документы процесса (docs/). У Vault проект
+    // один (creative-textile/vault), поэтому по умолчанию берётся репозиторий
+    // роли Warden из базы «Роли», а переменная нужна только для форков.
     docsRepo: "",
-    // D-086: файл, в шапке которого лежит опубликованная редакция ТЗ и очереди.
+    // D-086: файл, в шапке которого лежит опубликованная редакция плана и миссий.
     // Читается из репозитория перед приёмкой ответа: «объявлено» ≠ «лежит в main».
-    queueDoc: "docs/handoff/syn-3-card-queue.md",
+    // D-108: до фазы 0 это была очередь миссии VAULT-1; миссий ещё нет, а план
+    // фаз есть — поэтому сверка идёт по docs/PHASES.md, и номер редакции там
+    // читается той же шапкой «редакция N.M».
+    queueDoc: "docs/PHASES.md",
     heartbeatMs: 600000, // сердцебиение для сторожа: 10 минут — свежесть без траты квоты
     retryWaits: [800, 2500, 6000], // выдержки перед повторами: 4 попытки, ~9 с
     linkProbeWaits: [5000, 15000], // зонды связи после обрыва: 5 и 15 с
@@ -738,7 +746,7 @@
 
   const NTFY_BASE = "https://ntfy.sh";
   const SCRIPT_VERSION =
-    (typeof GM_info !== "undefined" && GM_info?.script?.version) || "1.14.33";
+    (typeof GM_info !== "undefined" && GM_info?.script?.version) || "1.16.1";
 
   /** «https://ntfy.sh/topic?x=1» и «topic» одинаково дают topic. */
   function normalizeNtfyTopic(raw) {
@@ -2662,7 +2670,7 @@
             <label>URL базы «Обратная связь» в Notion<input id="cfn-project-questionsUrl" style="${field}" placeholder="https://…"></label>
             <label>GitHub репозиторий<input id="cfn-project-repo" style="${field}" placeholder="owner/repository"></label>
             <label>Базовая ветка<input id="cfn-project-branch" style="${field}" value="main"></label>
-            <label>Папка проекта внутри Arena (латиница)<input id="cfn-project-driveFolder" style="${field}" placeholder="synapse"></label>
+            <label>Папка проекта внутри Arena (латиница)<input id="cfn-project-driveFolder" style="${field}" placeholder="vault"></label>
           </div>
           <div id="cfn-project-repos" style="border:1px solid #343b48;border-radius:8px;padding:10px;margin-top:14px;display:none">
             <h4 style="margin:0 0 6px">Репозитории профиля</h4>
@@ -2672,7 +2680,7 @@
           </div>
           <div id="cfn-project-routes" style="border:1px solid #343b48;border-radius:8px;padding:10px;margin-top:10px;display:none">
             <h4 style="margin:0 0 6px">Маршрутизация ролей к репозиториям</h4>
-            <div style="color:#aab4c3;font-size:12px">Каждой роли ставится в соответствие репозиторий, в котором она работает (ID роли — UUID страницы в базе «Роли», а не её имя). Executor Core → synapse, Executor Cortex → synapse-cortex, аудит из сессии Cortex — явный маршрут или полная ссылка на PR. Роли без маршрута работают в главном репозитории.</div>
+            <div style="color:#aab4c3;font-size:12px">Каждой роли ставится в соответствие репозиторий, в котором она работает (ID роли — UUID страницы в базе «Роли», а не её имя). Executor App → creative-textile/vault, Executor Chain → creative-textile/vault, аудит — явный маршрут или полная ссылка на PR. Роли без маршрута работают в главном репозитории.</div>
             <div id="cfn-project-routes-list"></div>
             <button id="cfn-project-route-add" type="button" style="${action};margin-top:7px">Добавить маршрут роли</button>
             <button id="cfn-project-roles-autofill" type="button" style="${action};margin-top:7px;margin-left:7px">Автозаполнить маршруты ролей</button>
@@ -3273,7 +3281,7 @@
       Тихие (priority 2): задание отправлено, ответ записан, пауза снята.<br>
       Громкие (priority 5): только когда цикл остановлен. Громкий тест — тоже только на паузе или при выключенном цикле.</div>
       <label style="display:block;margin-bottom:6px">Топик или ссылка<br>
-        <input id="cfn-ntfy-topic" placeholder="arena-creative36711" style="${inputStyle()}"></label>
+        <input id="cfn-ntfy-topic" placeholder="arena-vault" style="${inputStyle()}"></label>
       <label style="display:block;margin-bottom:6px">Access token (необязательно)<br>
         <input id="cfn-ntfy-token" type="password" placeholder="tk_…" style="${inputStyle()}"></label>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -6383,6 +6391,60 @@
     }
   }
 
+  /**
+   * Что именно нашлось в панели ввода при последнем поиске Send.
+   *
+   * До 1.16.1 «кнопка не найдена» означала сразу три разных состояния: панели
+   * ввода нет, кнопки в панели нет и кнопка есть, но `disabled`. По такому
+   * отчёту чинить нечего: 12.11 в 23:11 поле держало 4182 знака, на странице
+   * было 148 кнопок, а пауза говорила «кнопка не найдена». Теперь разбор
+   * запоминается, и причина отказа называет состояние, а не догадку.
+   */
+  let lastSendScan = null;
+
+  /**
+   * Последняя вставка: состоялась ли она «по мнению редактора».
+   *
+   * `registered: false` означает, что текст в узле есть, а ввод не прошёл
+   * (`execCommand` не сработал и сработал запасной `textContent`). Это не
+   * успех, хотя `writePrompt` вернул true: Send от такого текста не загорится.
+   */
+  let lastWrite = null;
+
+  /**
+   * Прошлая вставка в это же поле не была принята редактором.
+   *
+   * Признак берётся только из `writePrompt`: он знает, прошёл ли `execCommand`
+   * или текст лёг запасным `textContent`. Человеческий ввод и успешная вставка
+   * сюда не попадают никогда — значит перевставка не может затереть набранное.
+   * Окно — `sendHealWindowMs`: старая запись уже не про это поле.
+   */
+  function unregisteredWrite(editor, text) {
+    const w = lastWrite;
+    if (!w || w.registered !== false || w.healed) return false;
+    if (w.editor && editor && w.editor !== editor) return false;
+    const windowMs = Number(C.sendHealWindowMs) || 45000;
+    if (Date.now() - Number(w.at || 0) > windowMs) return false;
+    const shown = flat(composerText(editor));
+    const want = flat(text);
+    if (!shown || !want) return false;
+    return shown.includes(want.slice(0, 60));
+  }
+
+  /** Короткая строка для паузы и снимка страницы: где искали и что нашли. */
+  function sendScanSummary() {
+    const scan = lastSendScan;
+    if (!scan) return "панель ввода: не разбиралась";
+    const scope = scan.scope === "панель" ? "панель ввода" : scan.scope === "форма" ? "форма поля" : "не найдена";
+    const parts = [`${scope}: кнопок ${scan.total}`];
+    if (scan.disabled) parts.push(`disabled ${scan.disabled}`);
+    if (scan.usableSend) parts.push("Send активна");
+    else if (scan.likeSend) parts.push("Send есть, но недоступна");
+    else parts.push("кнопки с подписью Send в панели нет");
+    if (scan.outsideSend) parts.push(`Send вне панели ${scan.outsideSend}`);
+    return parts.join(", ");
+  }
+
   function sendButton(editor) {
     if (!composerAlive(editor)) return null;
 
@@ -6408,7 +6470,35 @@
       !inOwnPanel(b) &&
       !inSidebar(b) &&
       !STOP_LABEL.test(String(labelText(b)[0] || ""));
-    const controls = [...scope.querySelectorAll('button, [role="button"], input[type="submit"]')].filter(usable);
+    const candidates = [...scope.querySelectorAll('button, [role="button"], input[type="submit"]')];
+    const controls = candidates.filter(usable);
+    // Разбор панели — не для поиска, а для причины отказа. Кнопки вне панели
+    // по-прежнему не нажимаются (23.10 три клика ушли в аккаунт), но их число
+    // в отчёте нужно: иначе переверстку Arena не отличить от серой кнопки.
+    lastSendScan = {
+      at: Date.now(),
+      scope: box ? "панель" : "форма",
+      total: candidates.length,
+      disabled: candidates.filter((b) =>
+        b.disabled ||
+        b.getAttribute?.("aria-disabled") === "true" ||
+        b.getAttribute?.("data-disabled") === "true").length,
+      likeSend: candidates.filter((b) => labelText(b).some((l) => SEND_LABEL.test(l))).length,
+      usableSend: controls.filter((b) => labelText(b).some((l) => SEND_LABEL.test(l))).length,
+      outsideSend: 0,
+    };
+    if (!lastSendScan.usableSend && !lastSendScan.likeSend) {
+      // Send искали в панели и не нашли: сказать, есть ли она вообще на
+      // странице. Это чтение, а не клик: подпись Send вне панели не даёт права
+      // её нажимать.
+      try {
+        lastSendScan.outsideSend = [...document.querySelectorAll("button, [role=\"button\"]")]
+          .filter((b) => b !== editor && !scope.contains?.(b) && visible(b) && !inSidebar(b) && !inOwnPanel(b))
+          .filter((b) => labelText(b).some((l) => SEND_LABEL.test(l))).length;
+      } catch {
+        lastSendScan.outsideSend = 0;
+      }
+    }
     if (!controls.length) return null;
 
     // 1. Явная подпись отправки. Из нескольких — последняя в панели: ряд
@@ -6497,6 +6587,17 @@
       expected: text.length,
       alive: composerAlive(live),
     }));
+    // 1.16.1: «текст в DOM» и «редактор принял ввод» — разные вещи.
+    //
+    // Запасной путь `textContent` кладёт символы в узел, но ProseMirror о них
+    // не знает: его состояние остаётся пустым, и кнопка Send — серая. Именно
+    // это случилось 12.11 в 23:11: поле держало 4182 знака, `sendReady` 20 с
+    // не находил активной кнопки, а ждать было нечего — вставка «удалась».
+    // Поэтому факт регистрации запоминается: по нему `waitSendReady` решает,
+    // лечить ли поле, а не ждать вслепую.
+    lastWrite = written > 0
+      ? { at: Date.now(), editor: live, chars: written, registered: inserted === true }
+      : null;
     if (written > 0) return true;
 
     // Поле перерисовали: одна повторная попытка в новом узле.
@@ -6543,6 +6644,24 @@
       live.dispatchEvent(new InputEvent("input", { bubbles: true, data: "", inputType: "deleteContentBackward" }));
     }
     return !composerText(live);
+  }
+
+  /**
+   * Ввод не зарегистрирован: текст в поле есть, а Send от него не загорается.
+   *
+   * 1.16.1: это отдельное состояние, а не «долго рисуется». `waitSendReady`
+   * раньше писал заново только в ПУСТОЕ поле (D-079: не затирать набранное), и
+   * на непустом поле с непринятым вводом ждал все 20 с впустую. Здесь — тот же
+   * безопасный путь, каким поле чистится при отмене: `clearComposer`, затем
+   * вставка через `execCommand`. Условия жёсткие (см. `waitSendReady`): только
+   * когда прошлая вставка сама призналась, что ввод не прошёл, и не больше
+   * `sendHealMax` раз за ожидание.
+   */
+  function reinsertPrompt(editor, text) {
+    const live = composerAlive(editor) ? editor : composer();
+    if (!live) return false;
+    if (!clearComposer(live)) return false;
+    return writePrompt(live, text);
   }
 
   /**
@@ -7240,6 +7359,9 @@
     const deadline = started + (Number(timeoutMs) || 20000);
     let lastPrompt = 0;
     let rewrites = 0;
+    // 1.16.1: перевставки по непринятому вводу считаются отдельно от возврата
+    // стёртого текста в пустое поле — это разные причины и разные пределы.
+    let heals = 0;
     let told = false;
     while (Date.now() < deadline) {
       const probe = sendReady(editor);
@@ -7256,6 +7378,24 @@
         lastPrompt = Date.now();
         rewrites += 1;
         writePrompt(probe.editor, text);
+      } else if (
+        probe.editor && holdsText && heals < (Number(C.sendHealMax) || 2) &&
+        Date.now() - lastPrompt > 1500 &&
+        typeof unregisteredWrite === "function" && typeof reinsertPrompt === "function" &&
+        unregisteredWrite(probe.editor, text)
+      ) {
+        // 1.16.1: поле непустое, но ввод не зарегистрирован — `writePrompt`
+        // сам сказал, что текст лёг в узел запасным путём, а ProseMirror его
+        // не принял. Ждать Send в этом состоянии бессмысленно: 12.11 в 23:11
+        // так прошло 20 с при 4182 знаках в поле. Перевставка идёт тем же
+        // путём, что и очистка при отмене, и только по признаку самого
+        // `writePrompt` — набранное человеком поле она не трогает.
+        lastPrompt = Date.now();
+        heals += 1;
+        dbg("Send: ввод не зарегистрирован — перевставляю текст", { heals });
+        if (reinsertPrompt(probe.editor, text)) {
+          lastWrite = { ...(lastWrite || {}), healed: true, at: Date.now() };
+        }
       }
       if (!told && Date.now() - started > 3000) {
         told = true;
@@ -7689,7 +7829,8 @@
       let btn = await waitSendReady(live, text);
       if (!btn) {
         why.push(
-          `активной кнопки Send нет за ${Math.round((Number(C.sendReadyMs) || 20000) / 1000)} с (${composerDiagnostics()})`,
+          `активной кнопки Send нет за ${Math.round((Number(C.sendReadyMs) || 20000) / 1000)} с ` +
+        `(${composerDiagnostics()}; ${typeof sendScanSummary === "function" ? sendScanSummary() : "панель не разбиралась"})`,
         );
         break;
       }
@@ -7830,6 +7971,12 @@
       `панелей ${completionPanels().length}`,
       ...(dialog ? ["поверх чата открыт диалог Arena"] : []),
       `кнопка ${button ? (button.disabled ? "disabled" : "активна") : "нет"}`,
+      // 1.16.1: «кнопка нет» — это три разных состояния, и чинят их по-разному.
+      // Разбор панели называет, что именно нашлось, а `writePrompt` — принял ли
+      // редактор вставку. Без этих двух полей 12.11 в 23:11 причину приходилось
+      // восстанавливать по коду.
+      `панель: ${typeof sendScanSummary === "function" ? sendScanSummary() : "нет данных"}`,
+      `вставка: ${lastWrite ? (lastWrite.registered === false ? "редактор ввод не принял" : "через execCommand") : "не было"}`,
       `отпечаток ${String(textHash(text))}`,
       ...why,
     ].join(", ");
@@ -9941,8 +10088,8 @@
 
   /**
    * Разрешить короткий slug из старых Notion-полей в owner/repo профиля.
-   * Role rows давно допускали значение `synapse`, хотя GitHub API требует
-   * `Creative36711/synapse`; приоритет — точное уникальное совпадение профиля.
+   * Role rows давно допускали короткий slug (`vault`), хотя GitHub API требует
+   * `owner/repo`; приоритет — точное уникальное совпадение профиля.
    */
   function canonicalTargetRepository(value, fallback = C.repo) {
     const raw = String(value || fallback || C.repo || "").trim().replace(/^https?:\/\/github\.com\//i, "").replace(/\/$/, "");
@@ -9956,13 +10103,12 @@
   /**
    * D-086: может ли эта роль вообще править этот репозиторий.
    *
-   * 09.11 Мастер назвал правило прямым текстом: «у нас два репозитория, кто к
-   * какому подключён, тот может тот и править; кто к чему подключён — смотри в
-   * Notion в базе «Роли», там есть Репозиторий». До сих пор `repo` роли был
-   * только источником значения по умолчанию: карточка с полем «Репозиторий»
-   * перебивала его, и роль, подключённая к публичному `synapse`, могла получить
-   * выдачу в приватный cortex (или наоборот) — ровно так выглядит «у роли не тот
-   * репозиторий», на который жалуются агенты.
+   * Мастер назвал правило прямым текстом: «кто к какому репозиторию подключён,
+   * тот тот и правит; подключение — в Notion, база «Роли», поле «Репозиторий».
+   * До сих пор `repo` роли был только источником значения по умолчанию:
+   * карточка с полем «Репозиторий» перебивала его, и роль, подключённая к
+   * одному репозиторию, могла получить выдачу в другой — ровно так выглядит
+   * «у роли не тот репозиторий», на который жалуются агенты.
    *
    * Правило мягкое там, где назначение неизвестно: нет поля у роли — берём repo
    * сессии профиля, как раньше. Расхождение с объявленным репозиторием роли —
@@ -10554,7 +10700,7 @@
     } });
 
     def("repo.boundary", { ruleIds: ["R-REPO-BOUNDARY"], render: () =>
-      "D-022: пиши только в целевой repo. synapse (MIT) — роли ядра; cortex закрыт и ролям ядра не виден; ссылка на cortex в synapse — дефект." });
+      "D-022: пиши только в целевой repo. Vault — единственный репозиторий проекта; чужая зона только читается, посторонняя ссылка — дефект." });
 
     // D-038: зона роли — это факт (как task.scope), а не шаблон. Вынесена в
     // verbatim-блок role.zone и не входит в overhead; authority.core несёт только
@@ -10673,11 +10819,24 @@
     def("adr.protocol", { ruleIds: ["R-QUESTIONS"], render: () =>
       "Контракт/оракул — только через question «ADR:» (3 варианта, default «оставить как есть»); до решения приёмки не меняется. proposed-файл: вопрос со ссылкой; статус accepted/rejected после ответа." });
 
+    // Текст СЖАТ, а не скопирован из прошлого проекта: до D-111 здесь стояли
+    // «каталог игр», «доля/валюта/комиссия» и «ядро не open source без OSI» —
+    // термины другой игры (2D-выживание с крафтом), которых в Vault нет. Агент
+    // читал запрет про каталог и не понимал, к чему он относится. Фаза не
+    // называется в блоке намеренно: активная фаза меняется (сейчас Ф1), а
+    // правило остаётся. Источник фаз — docs/PHASES.md через краткий регламент.
     def("phases.bans", { ruleIds: ["R-PHASES"], render: () =>
-      "Фазы 0–4: без платежей/каталога/загрузки/аккаунтов до их фаз; без запуска кода пользователей; без доли/валюты/комиссии; без платной инфра без лимита; ядро не open source без OSI; без пустых сервисов." });
+      "Фазы: не забегай вперёд активной; боевых платежей и ключей нет до mainnet; платное — только с лимитом Мастера; пустых сервисов «под будущее» нет; оракул не ослаблять." });
 
+    // D-111: «8 локалей» и «локаль не меняет правил» — из D-013…D-019 прошлого
+    // продукта (Godot-игра). В Vault пользовательский интерфейс пока русский, а
+    // каталогов перевода (`locales/**`) в репозитории нет: агент искал путь,
+    // которого не существует, и писал в отчёт «не нашёл». Правило переписано под
+    // то, что действительно проверяется сейчас: текст не хардкодить в разметку,
+    // а строки-литералы выносить по мере появления каталогов (миссия локализации
+    // — отдельная, Ф4). Состав локалей — решение Мастера, не агента.
     def("i18n.rule", { ruleIds: ["R-I18N"], audience: ["Executor"], render: () =>
-      "i18n: 8 локалей (en,ru,zh-Hans,ja,pt-BR,de,fr,ko); текст только в каталогах; диагностика код+параметры; локаль не меняет правил." });
+      "i18n: текст UI не хардкодь в разметку — строки отдельно от логики; диагностика код+параметры. Языки решает Мастер." });
 
     def("card.fields", { ruleIds: ["R-CARD-FIELDS"], audience: ["Executor", "Auditor"], render: () =>
       "Поля карточки (Dispatch State, Run ID, Output Drive File ID, Recipient Agent ID, Started At, Submitted At, PR, Check) ставит скрипт; отчёт — поле report маркера." });
@@ -10906,7 +11065,7 @@
     def("pilot.stop", { audience: ["pilot"], render: () =>
       "Финал — отчёт текстом: что сделано, как запущено, артефакты, журнал затруднений и допущения. Командные маркеры не используй." });
     def("pilot.repo", { audience: ["pilot"], render: (c) =>
-      `Репо: ${c.pilot?.repo || "Creative36711/synapse"}@${c.pilot?.startSha || "main"}, read-only; запись только в локальный sandbox.` });
+      `Репо: ${c.pilot?.repo || "creative-textile/vault"}@${c.pilot?.startSha || "main"}, read-only; запись только в локальный sandbox.` });
 
     def("delivery.recovery", { render: () =>
       "Это продолжение того же хода после сбоя доставки, не новая задача и не новая выдача. Сохрани все ID. Разбери снимок очереди и продолжи по правилам своей роли." });
@@ -11124,7 +11283,7 @@
       forbidden: ["queue.coordinator", "review.protocol"],
       budget: { overhead: 1500 },
     });
-    def("pilot.synapse", {
+    def("pilot.vault", {
       audience: ["pilot"], marker: null,
       blocks: ["pilot.repo", "pilot.brief", "pilot.stop"],
       requiredFacts: ["pilot.brief", "pilot.startSha"],
@@ -11248,7 +11407,7 @@
         if (kind === "arbiter") return "continuation.arbiter";
         return "continuation.dispatch";
       }
-      if (kind === "pilot") return "pilot.synapse";
+      if (kind === "pilot") return "pilot.vault";
       if (kind === "reminder") return "reminder.marker";
       if (kind === "plan") return tier === "recovery" || tier === "compact" ? "coordinator.recovery" : "coordinator.plan";
       if (kind === "review") return "reviewer.mission";
@@ -11344,7 +11503,7 @@
       const profileId = c.profileId || PROMPT_PROFILES.select(kind, fn, tier);
       const profile = PROMPT_PROFILES.profiles[profileId];
       if (!profile) return err("unknown_profile", `нет профиля для kind=${kind} fn=${fn} tier=${tier}`);
-      if (kind === "pilot" && !["pilot.synapse", "continuation.pilot"].includes(profileId)) return err("unknown_profile", "pilot обязан использовать pilot.synapse или continuation.pilot");
+      if (kind === "pilot" && !["pilot.vault", "continuation.pilot"].includes(profileId)) return err("unknown_profile", "pilot обязан использовать pilot.vault или continuation.pilot");
 
       for (const fact of profile.requiredFacts) {
         const v = get(c, fact);
@@ -11371,7 +11530,7 @@
         if (cond && !cond(c)) continue;
         // Аудитория: pilot-профиль не принимает командные блоки и наоборот.
         const aud = block.audience || [];
-        const isPilotProfile = profileId === "pilot.synapse" || profileId === "continuation.pilot";
+        const isPilotProfile = profileId === "pilot.vault" || profileId === "continuation.pilot";
         const isPilotBlock = aud.includes("pilot");
         if (isPilotProfile !== isPilotBlock) {
           return err("forbidden_block", isPilotProfile ? `командный блок ${id} попал в pilot-профиль` : `pilot-блок ${id} попал в командный профиль`);
@@ -14284,8 +14443,8 @@
    * репозитория. Это факт, а не догадка.
    *
    * 09.11 (2-я редакция): ролей два репозитория, и документы лежат не там, где
-   * работает роль. `synapse` — публичный репозиторий кода, `synapse-cortex` —
-   * приватный, и в Notion «Репозиторий» роли-приёмки (`Warden`) назван cortex.
+   * работает роль. У Vault репозиторий один (`creative-textile/vault`), и в
+   * Notion «Репозиторий» роли-приёмки (`Warden`) назван именно он.
    * Поэтому читаем не `C.repo` (это репозиторий сессии роли), а
    * `C.docsRepo` → репозиторий роли-приёмки → `C.repo`. Иначе сверка ищет
    * документ не в том репозитории и всегда возвращает «не прочитано».
@@ -14304,7 +14463,7 @@
     return String(C.repo || "");
   }
 
-  async function publishedTzVersion(file = C.queueDoc || "docs/handoff/syn-3-card-queue.md") {
+  async function publishedTzVersion(file = C.queueDoc || "docs/PHASES.md") {
     const cache = GM_getValue("cfn-tz-published", null);
     const now = Date.now();
     const repo = canonicalTargetRepository(docsRepository());
@@ -14318,8 +14477,12 @@
       const url = `https://api.github.com/repos/${repo}/contents/${file}?ref=${encodeURIComponent(C.branch || "main")}`;
       const got = await request("GET", url, githubHeaders(token));
       const text = b64Text(got && got.content);
-      const tz = String(text || "").match(/ТЗ\s*\**\s*(\d+\.\d+)/i);
-      const queue = String(text || "").match(/редакция\s*\**\s*(\d+\.\d+)/i);
+      // D-108: план фаз объявляет «Версия 1.0» в шапке; миссии и очереди —
+      // «ТЗ 1.5» и «редакция 1.7». Читаем все три формы, иначе гейт D-086
+      // молча не видит опубликованный номер там, где он есть.
+      const body = String(text || "");
+      const tz = body.match(/ТЗ\s*\**\s*(\d+\.\d+)/i) || body.match(/Версия\s*\**\s*(\d+\.\d+)/i);
+      const queue = body.match(/редакция\s*\**\s*(\d+\.\d+)/i) || body.match(/Версия\s*\**\s*(\d+\.\d+)/i);
       if (!tz && !queue) return null;
       const out = { at: now, file, repo, version: tz ? tz[1] : "", queue: queue ? queue[1] : "" };
       GM_setValue("cfn-tz-published", out);
@@ -14575,7 +14738,7 @@
     const token = GM_getValue(K.ghToken, "");
     try {
       // D-037: сторож обходит ВСЕ репозитории профиля, а не только главный.
-      // Предложение может лежать во втором репозитории (например, synapse),
+      // Предложение может лежать в другом репозитории (например, в форке),
       // и тогда полный текст с SHA никогда не дописывался бы в вопрос —
       // предохранитель не пропустил бы его к приёмке. 404 папки decisions
       // в одном репозитории не останавливает обход остальных.
@@ -17434,7 +17597,7 @@
    *
    * В базе «Роли» зона пишется разными людьми и разным почерком: у Warden это
    * абзац («Решения по постановке и приёмке; код не трогает…»), у Locale
-   * Auditor — список с префиксом «synapse: ». Прежний разбор молча выбрасывал
+   * Auditor — список с префиксом «vault: ». Прежний разбор молча выбрасывал
    * всё, что не похоже на glob, и зона превращалась в пустую: проверка
    * `scopeZoneIssue` тогда ничего не проверяла, а прозу читали как «зона есть».
    *
@@ -17447,7 +17610,7 @@
   const roleZoneGlobs = (roleZone) => {
     const out = [];
     for (const rawLine of String(roleZone || "").split(/[\n;]+/)) {
-      // Метка перед путями («synapse: », «Зона записи: ») — не путь, а подпись.
+      // Метка перед путями («vault: », «Зона записи: ») — не путь, а подпись.
       // Раньше она приклеивалась к первому шаблону, и зона начиналась со
       // второго: у Locale Auditor `locales/**` молча выпадал.
       const line = rawLine.replace(/^\s*[^:\s][^:]{0,30}:\s*/, "").trim();
@@ -17599,8 +17762,8 @@
     // обслуживал несколько репозиториев без смены UUID.
     // The freshly re-read Notion role row is the live assignment source. The
     // profile map is a compatibility fallback for older role rows without a
-    // repository field; it must not route Executor Core into the profile's
-    // default cortex repo when Notion explicitly assigns it to synapse.
+    // repository field; an explicit Notion assignment always wins over the
+    // profile default.
     const sessionRepo = canonicalTargetRepository(confirmed[0].repo || profileSessionRepo(role.id) || "", C.repo);
 
     // Карточка перечитывается прямо перед выдачей: между выбором из списка и
@@ -17863,7 +18026,7 @@
   const PILOT_TIMEOUT_MS = 4 * 60 * 60 * 1000; // 4 часа до вызова Мастера
   const PILOT_FORBIDDEN = [
     /CF_[A-Z]+_RESULT/, /\bCF_[A-Z_]+\b/, /notion/i, /cortex/i,
-    /REGULATION/, /WARDEN/i, /DECISIONS/, /synapse-cortex/i,
+    /РЕГЛАМЕНТ/i, /WARDEN/i, /DECISIONS/, /notion\.so/i,
   ];
   const pilotBriefClean = (brief) => {
     const text = String(brief || "");
@@ -17892,7 +18055,7 @@
     let host = ""; let path = "";
     try { const u = new URL(clean); host = u.host; path = u.pathname; } catch { return { ok: false, error: "pilot URL не разбирается" }; }
     if (!/arena|e2b|app/i.test(host)) return { ok: false, error: "pilot URL не похож на страницу Arena-агента" };
-    if (!/^[0-9a-f]{40}$/i.test(String(startSha || ""))) return { ok: false, error: "startSha должен быть 40-hex SHA коммита synapse" };
+    if (!/^[0-9a-f]{40}$/i.test(String(startSha || ""))) return { ok: false, error: "startSha должен быть 40-hex SHA коммита Vault" };
     if (!pilotBriefClean(brief)) return { ok: false, error: "бриф содержит внутренние токены (CF_/Notion/cortex/REGULATION/WARDEN/DECISIONS) или пуст" };
     const variant = pilotVariant(brief);
     if (!["A", "B", "C"].includes(variant)) return { ok: false, error: "бриф должен быть помечен вариантом A, B или C" };
@@ -17922,7 +18085,7 @@
     if (!pilot) return { ok: false, error: "пилот не зарегистрирован" };
     const envelope = PromptCompiler.compile({
       kind: "pilot", role: { fn: "pilot", name: `pilot-${pilot.variant}` },
-      pilot: { brief: pilot.brief, repo: "Creative36711/synapse", startSha: pilot.startSha },
+      pilot: { brief: pilot.brief, repo: "creative-textile/vault", startSha: pilot.startSha },
       delivery: { tier: "full" },
     });
     if (!envelope.ok) return { ok: false, error: envelope.error.message };
@@ -19327,7 +19490,7 @@
    *   • agent — создание агента в Arena, его Agent URL и доступы;
    *   • money — лицензии, ToS, деньги, секреты;
    *   • product — переход фазы, новая миссия, границы продукта.
-   * Код в `synapse` Мастеру не принадлежит — его пишет роль ядра; здесь его нет
+   * Код в `vault` Мастеру не принадлежит — его пишет роль проекта; здесь его нет
    * намеренно, иначе «только человек» стало бы списком прав человека на код.
    */
   const MASTER_ONLY = ["install", "agent", "money", "product"];
@@ -20118,6 +20281,18 @@
       skipCard: (() => { try { return Boolean(skipCardButton()); } catch { return false; } })(),
       panels: (() => { try { return completionPanels().length; } catch { return 0; } })(),
       diagnostics: (() => { try { return composerDiagnostics(); } catch { return null; } })(),
+      // 1.16.1: состояние кнопки Send и факт приёма вставки. Без них снимок
+      // «кнопка не найдена» не отличить от «кнопка серая» и «Send вне панели» —
+      // ровно на этом 12.11 в 23:11 разбор встал.
+      send: {
+        scan: (() => { try { return sendScanSummary(); } catch { return ""; } })(),
+        write: (() => {
+          try {
+            if (typeof lastWrite === "undefined" || !lastWrite) return "не было";
+            return lastWrite.registered === false ? "редактор ввод не принял" : "через execCommand";
+          } catch { return ""; }
+        })(),
+      },
     });
   }
 
@@ -20202,8 +20377,7 @@
     // проекта, уже выше) и отдельный приватный репозиторий, если Мастер его
     // завёл (`C.telemetryRepo`). Нет репозитория — телеметрия остаётся на Drive,
     // и это не ошибка, а норма.
-    // 09.11 (2-я редакция): репозитории разной видимости — `synapse` публичный,
-    // `synapse-cortex` приватный. Телеметрия содержит тексты карточек, зоны
+    // 09.11 (2-я редакция): репозитории разной видимости. Телеметрия содержит тексты карточек, зоны
     // ролей и куски переписки, поэтому разрешён только приватный получатель.
     // Проверяем один раз на сессию: лишний GET на каждую паузу не нужен.
     const tRepo = String(C.telemetryRepo || "");

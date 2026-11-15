@@ -36,7 +36,7 @@ assert.ok(from > -1 && to > from, 'блок разбора pr/merged найде�
 const block = src.slice(from, to + endMark.length);
 
 const load = (legacy) => new Function(
-  `let ACTIVE_PROFILE = { legacy: ${legacy}, repos: [{ repo: "Creative36711/synapse" }] };\n` +
+  `let ACTIVE_PROFILE = { legacy: ${legacy}, repos: [{ repo: "creative-textile/vault-core" }] };\n` +
     `${block}\nreturn { prMergeConflict, prDeclined, hasMergedClaim };`,
 )();
 
@@ -67,7 +67,7 @@ const cases = [
   // projectPrBoundary, а не детектор противоречия.
   ['пустой pr + merged:true', { ...k34, pr: '' }, false],
   ['исправленный маркер: pr:null + merged:false', { ...k34, merged: false }, false],
-  ['реальный PR + merged:true', { ...k34, pr: 'https://github.com/Creative36711/synapse/pull/17' }, false],
+  ['реальный PR + merged:true', { ...k34, pr: 'https://github.com/creative-textile/vault-core/pull/17' }, false],
   ['забывчивость: поля pr нет, merged:true', { status: 'submitted', merged: true }, false],
   ['без заявки о мерже', { pr: null }, false],
   ['null', null, false],

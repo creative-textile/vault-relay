@@ -49,7 +49,7 @@ test('provisioning не выдаётся неадмин-функции и тре
 test('код provisioning не содержит проектных имён и named-role привилегий', () => {
   for (const f of ['31-provision-core.js', '32-provision-dom.js', '33-provision-flow.js', '34-provision-ui.js']) {
     const text = readFileSync(join(srcDir, f), 'utf8');
-    assert.ok(!/creative36711|synapse/i.test(text), `${f}: проектное имя`);
+    assert.ok(!/creative-textile|vault/i.test(text), `${f}: проектное имя`);
     assert.ok(!/norm\(["']Warden|===\s*["']Warden|name\s*===\s*["']Coordinator["']/i.test(text), `${f}: named-role привилегия`);
   }
   const profiles = readFileSync(join(srcDir, '02-profiles-core.js'), 'utf8');

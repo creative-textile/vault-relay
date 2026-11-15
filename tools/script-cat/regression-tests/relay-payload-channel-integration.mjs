@@ -26,7 +26,7 @@ function makeExecutorPrompt(pauses) {
     `${src.slice(pFrom, pTo)}\nreturn executorPrompt;`)(
     rt, taskTitle, promptRole, promptTarget, PromptCompiler,
     (text) => pauses.push(text), budgetBreakdownLine,
-    { driveFolder: 'synapse', projectName: 'Synapse' });
+    { driveFolder: 'vault', projectName: 'Vault' });
 }
 
 function makeHarness({ payloadId = '', fileText = '', saveFails = false } = {}) {
@@ -87,13 +87,13 @@ function makeHarness({ payloadId = '', fileText = '', saveFails = false } = {}) 
     (page) => page?.properties?.['Кому']?.select?.name || '',
     (page, fallback) => fallback,
     () => true,
-    { repo: 'Creative36711/synapse-cortex', branch: 'arena/87031a47-synapse-cortex', payloadInlineMax: 1500 },
-    { legacy: true, repo: 'Creative36711/synapse-cortex', branch: 'main' },
+    { repo: 'creative-textile/vault', branch: 'arena/87031a47-vault', payloadInlineMax: 1500 },
+    { legacy: true, repo: 'creative-textile/vault', branch: 'main' },
     (key, fallback) => store[key] ?? fallback,
     (key, value) => { store[key] = value; },
     (text) => pauses.push(text),
     { pending: 'cfn-pending', expect: 'cfn-expect' },
-    () => 'Creative36711/synapse-cortex',
+    () => 'creative-textile/vault',
     (value, fallback) => String(value || fallback || '').trim(),
     () => 'main',
     () => null,

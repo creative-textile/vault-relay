@@ -236,7 +236,7 @@ function makeAdopt({ page = card(), notionFails = false, nodes = [], receipts = 
   const pending = {
     roleId: ROLE.id, roleName: ROLE.name, roleUrl: ROLE.url, roleFn: 'Executor', kind: 'dispatch',
     ref: UUID.dispatch, runId: UUID.run, missionId: UUID.mission, logId: 'log-1', title: 'SYN-1 · K-27',
-    url: 'https://notion.so/card', sessionRepo: 'example/relay-fixture', targetRepo: 'Creative36711/synapse',
+    url: 'https://notion.so/card', sessionRepo: 'example/relay-fixture', targetRepo: 'creative-textile/vault-core',
     targetBranch: 'main', text: REAL, at: Date.now(), ...pendingOver,
   };
   const store = new Map([[K.pending, clone(pending)], [K.expect, null], ['cfn-delivery-receipts-v1', clone(receipts)]]);

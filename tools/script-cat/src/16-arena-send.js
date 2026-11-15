@@ -342,6 +342,60 @@
     }
   }
 
+  /**
+   * Что именно нашлось в панели ввода при последнем поиске Send.
+   *
+   * До 1.16.1 «кнопка не найдена» означала сразу три разных состояния: панели
+   * ввода нет, кнопки в панели нет и кнопка есть, но `disabled`. По такому
+   * отчёту чинить нечего: 12.11 в 23:11 поле держало 4182 знака, на странице
+   * было 148 кнопок, а пауза говорила «кнопка не найдена». Теперь разбор
+   * запоминается, и причина отказа называет состояние, а не догадку.
+   */
+  let lastSendScan = null;
+
+  /**
+   * Последняя вставка: состоялась ли она «по мнению редактора».
+   *
+   * `registered: false` означает, что текст в узле есть, а ввод не прошёл
+   * (`execCommand` не сработал и сработал запасной `textContent`). Это не
+   * успех, хотя `writePrompt` вернул true: Send от такого текста не загорится.
+   */
+  let lastWrite = null;
+
+  /**
+   * Прошлая вставка в это же поле не была принята редактором.
+   *
+   * Признак берётся только из `writePrompt`: он знает, прошёл ли `execCommand`
+   * или текст лёг запасным `textContent`. Человеческий ввод и успешная вставка
+   * сюда не попадают никогда — значит перевставка не может затереть набранное.
+   * Окно — `sendHealWindowMs`: старая запись уже не про это поле.
+   */
+  function unregisteredWrite(editor, text) {
+    const w = lastWrite;
+    if (!w || w.registered !== false || w.healed) return false;
+    if (w.editor && editor && w.editor !== editor) return false;
+    const windowMs = Number(C.sendHealWindowMs) || 45000;
+    if (Date.now() - Number(w.at || 0) > windowMs) return false;
+    const shown = flat(composerText(editor));
+    const want = flat(text);
+    if (!shown || !want) return false;
+    return shown.includes(want.slice(0, 60));
+  }
+
+  /** Короткая строка для паузы и снимка страницы: где искали и что нашли. */
+  function sendScanSummary() {
+    const scan = lastSendScan;
+    if (!scan) return "панель ввода: не разбиралась";
+    const scope = scan.scope === "панель" ? "панель ввода" : scan.scope === "форма" ? "форма поля" : "не найдена";
+    const parts = [`${scope}: кнопок ${scan.total}`];
+    if (scan.disabled) parts.push(`disabled ${scan.disabled}`);
+    if (scan.usableSend) parts.push("Send активна");
+    else if (scan.likeSend) parts.push("Send есть, но недоступна");
+    else parts.push("кнопки с подписью Send в панели нет");
+    if (scan.outsideSend) parts.push(`Send вне панели ${scan.outsideSend}`);
+    return parts.join(", ");
+  }
+
   function sendButton(editor) {
     if (!composerAlive(editor)) return null;
 
@@ -367,7 +421,35 @@
       !inOwnPanel(b) &&
       !inSidebar(b) &&
       !STOP_LABEL.test(String(labelText(b)[0] || ""));
-    const controls = [...scope.querySelectorAll('button, [role="button"], input[type="submit"]')].filter(usable);
+    const candidates = [...scope.querySelectorAll('button, [role="button"], input[type="submit"]')];
+    const controls = candidates.filter(usable);
+    // Разбор панели — не для поиска, а для причины отказа. Кнопки вне панели
+    // по-прежнему не нажимаются (23.10 три клика ушли в аккаунт), но их число
+    // в отчёте нужно: иначе переверстку Arena не отличить от серой кнопки.
+    lastSendScan = {
+      at: Date.now(),
+      scope: box ? "панель" : "форма",
+      total: candidates.length,
+      disabled: candidates.filter((b) =>
+        b.disabled ||
+        b.getAttribute?.("aria-disabled") === "true" ||
+        b.getAttribute?.("data-disabled") === "true").length,
+      likeSend: candidates.filter((b) => labelText(b).some((l) => SEND_LABEL.test(l))).length,
+      usableSend: controls.filter((b) => labelText(b).some((l) => SEND_LABEL.test(l))).length,
+      outsideSend: 0,
+    };
+    if (!lastSendScan.usableSend && !lastSendScan.likeSend) {
+      // Send искали в панели и не нашли: сказать, есть ли она вообще на
+      // странице. Это чтение, а не клик: подпись Send вне панели не даёт права
+      // её нажимать.
+      try {
+        lastSendScan.outsideSend = [...document.querySelectorAll("button, [role=\"button\"]")]
+          .filter((b) => b !== editor && !scope.contains?.(b) && visible(b) && !inSidebar(b) && !inOwnPanel(b))
+          .filter((b) => labelText(b).some((l) => SEND_LABEL.test(l))).length;
+      } catch {
+        lastSendScan.outsideSend = 0;
+      }
+    }
     if (!controls.length) return null;
 
     // 1. Явная подпись отправки. Из нескольких — последняя в панели: ряд
@@ -456,6 +538,17 @@
       expected: text.length,
       alive: composerAlive(live),
     }));
+    // 1.16.1: «текст в DOM» и «редактор принял ввод» — разные вещи.
+    //
+    // Запасной путь `textContent` кладёт символы в узел, но ProseMirror о них
+    // не знает: его состояние остаётся пустым, и кнопка Send — серая. Именно
+    // это случилось 12.11 в 23:11: поле держало 4182 знака, `sendReady` 20 с
+    // не находил активной кнопки, а ждать было нечего — вставка «удалась».
+    // Поэтому факт регистрации запоминается: по нему `waitSendReady` решает,
+    // лечить ли поле, а не ждать вслепую.
+    lastWrite = written > 0
+      ? { at: Date.now(), editor: live, chars: written, registered: inserted === true }
+      : null;
     if (written > 0) return true;
 
     // Поле перерисовали: одна повторная попытка в новом узле.
@@ -502,6 +595,24 @@
       live.dispatchEvent(new InputEvent("input", { bubbles: true, data: "", inputType: "deleteContentBackward" }));
     }
     return !composerText(live);
+  }
+
+  /**
+   * Ввод не зарегистрирован: текст в поле есть, а Send от него не загорается.
+   *
+   * 1.16.1: это отдельное состояние, а не «долго рисуется». `waitSendReady`
+   * раньше писал заново только в ПУСТОЕ поле (D-079: не затирать набранное), и
+   * на непустом поле с непринятым вводом ждал все 20 с впустую. Здесь — тот же
+   * безопасный путь, каким поле чистится при отмене: `clearComposer`, затем
+   * вставка через `execCommand`. Условия жёсткие (см. `waitSendReady`): только
+   * когда прошлая вставка сама призналась, что ввод не прошёл, и не больше
+   * `sendHealMax` раз за ожидание.
+   */
+  function reinsertPrompt(editor, text) {
+    const live = composerAlive(editor) ? editor : composer();
+    if (!live) return false;
+    if (!clearComposer(live)) return false;
+    return writePrompt(live, text);
   }
 
   /**

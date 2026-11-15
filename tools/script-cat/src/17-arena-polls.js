@@ -548,6 +548,9 @@
     const deadline = started + (Number(timeoutMs) || 20000);
     let lastPrompt = 0;
     let rewrites = 0;
+    // 1.16.1: перевставки по непринятому вводу считаются отдельно от возврата
+    // стёртого текста в пустое поле — это разные причины и разные пределы.
+    let heals = 0;
     let told = false;
     while (Date.now() < deadline) {
       const probe = sendReady(editor);
@@ -564,6 +567,24 @@
         lastPrompt = Date.now();
         rewrites += 1;
         writePrompt(probe.editor, text);
+      } else if (
+        probe.editor && holdsText && heals < (Number(C.sendHealMax) || 2) &&
+        Date.now() - lastPrompt > 1500 &&
+        typeof unregisteredWrite === "function" && typeof reinsertPrompt === "function" &&
+        unregisteredWrite(probe.editor, text)
+      ) {
+        // 1.16.1: поле непустое, но ввод не зарегистрирован — `writePrompt`
+        // сам сказал, что текст лёг в узел запасным путём, а ProseMirror его
+        // не принял. Ждать Send в этом состоянии бессмысленно: 12.11 в 23:11
+        // так прошло 20 с при 4182 знаках в поле. Перевставка идёт тем же
+        // путём, что и очистка при отмене, и только по признаку самого
+        // `writePrompt` — набранное человеком поле она не трогает.
+        lastPrompt = Date.now();
+        heals += 1;
+        dbg("Send: ввод не зарегистрирован — перевставляю текст", { heals });
+        if (reinsertPrompt(probe.editor, text)) {
+          lastWrite = { ...(lastWrite || {}), healed: true, at: Date.now() };
+        }
       }
       if (!told && Date.now() - started > 3000) {
         told = true;
@@ -997,7 +1018,8 @@
       let btn = await waitSendReady(live, text);
       if (!btn) {
         why.push(
-          `активной кнопки Send нет за ${Math.round((Number(C.sendReadyMs) || 20000) / 1000)} с (${composerDiagnostics()})`,
+          `активной кнопки Send нет за ${Math.round((Number(C.sendReadyMs) || 20000) / 1000)} с ` +
+        `(${composerDiagnostics()}; ${typeof sendScanSummary === "function" ? sendScanSummary() : "панель не разбиралась"})`,
         );
         break;
       }
@@ -1138,6 +1160,12 @@
       `панелей ${completionPanels().length}`,
       ...(dialog ? ["поверх чата открыт диалог Arena"] : []),
       `кнопка ${button ? (button.disabled ? "disabled" : "активна") : "нет"}`,
+      // 1.16.1: «кнопка нет» — это три разных состояния, и чинят их по-разному.
+      // Разбор панели называет, что именно нашлось, а `writePrompt` — принял ли
+      // редактор вставку. Без этих двух полей 12.11 в 23:11 причину приходилось
+      // восстанавливать по коду.
+      `панель: ${typeof sendScanSummary === "function" ? sendScanSummary() : "нет данных"}`,
+      `вставка: ${lastWrite ? (lastWrite.registered === false ? "редактор ввод не принял" : "через execCommand") : "не было"}`,
       `отпечаток ${String(textHash(text))}`,
       ...why,
     ].join(", ");

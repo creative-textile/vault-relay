@@ -13,7 +13,7 @@ const BUDGETS = {
   'executor.card': 2800, 'auditor.card': 2200, 'coordinator.plan': 3400, 'coordinator.recovery': 1500,
   'reviewer.mission': 2400, 'reviewer.answer': 1800, 'reviewer.card': 2000, 'reminder.marker': 700,
   'reviewer.arbiter': 2400, 'continuation.arbiter': 700,
-  'delivery.compact': 1500, 'pilot.synapse': 250,
+  'delivery.compact': 1500, 'pilot.vault': 250,
 };
 const TOTALS = {
   'executor.card': 8000, 'auditor.card': 5500, 'coordinator.plan': 7500, 'reviewer.mission': 7000,
@@ -126,7 +126,7 @@ for (const req of cases) {
   const k17 = dispatchRequest('Auditor', {
     task: { ...task(), title: 'SYN-1 · K-17 · Промежуточный независимый аудит O-4' },
     role: { name: 'Spec Auditor', fn: 'Auditor', zone: 'docs/agents/**, tools/script-cat/**' },
-    target: { repo: 'Creative36711/synapse-cortex', baseBranch: 'arena/87031a47-synapse-cortex' },
+    target: { repo: 'creative-textile/vault', baseBranch: 'arena/87031a47-vault' },
   });
   const r = PromptCompiler.compile(k17);
   assert.ok(r.ok, `K-17-подобная карточка компилируется: ${r.error?.message}`);
@@ -182,11 +182,11 @@ for (const req of cases) {
 // 13. D-035: исполнитель/аудитор/ревьюер получают адрес папки артефактов, не корень.
 {
   for (const fn of ['Executor', 'Auditor', 'Reviewer']) {
-    const r = PromptCompiler.compile(dispatchRequest(fn, { drive: { project: 'synapse' } }));
+    const r = PromptCompiler.compile(dispatchRequest(fn, { drive: { project: 'vault' } }));
     assert.ok(r.ok, `${fn} компилируется с drive.artifacts`);
     const b = r.blocks.find((x) => x.id === 'drive.artifacts');
     assert.ok(b, `${fn} несёт блок drive.artifacts`);
-    assert.ok(r.text.includes('Arena/synapse/artifacts'), `${fn} видит адрес папки artifacts`);
+    assert.ok(r.text.includes('Arena/vault/artifacts'), `${fn} видит адрес папки artifacts`);
     assert.ok(r.text.includes('не корень Диска'), `${fn} видит запрет корня`);
     assert.ok(!b.verbatim, 'drive.artifacts не verbatim (честный overhead)');
     // drive.layout по-прежнему только Координатору — исполнитель его не получает
@@ -206,7 +206,7 @@ for (const req of cases) {
   const k20 = dispatchRequest('Auditor', {
     task: { ...task(), title: 'SYN-1 · K-20 · Промежуточный независимый аудит O-8' },
     role: { name: 'Spec Auditor', fn: 'Auditor', zone: longZone },
-    target: { repo: 'Creative36711/synapse', baseBranch: 'main' },
+    target: { repo: 'creative-textile/vault-core', baseBranch: 'main' },
   });
   const r = PromptCompiler.compile(k20);
   assert.ok(r.ok, `K-20 с длинной зоной компилируется: ${r.error?.message}`);
@@ -241,7 +241,7 @@ for (const req of cases) {
     id: '4126f0cf-5705-819c-89c3-c1566cf5b67a',
     name: 'SYN-3 · Транспорт и укомплектованность миссии (D-063…D-075)',
     round: 2, reworkLimit: 3,
-    tzUrl: 'https://www.notion.so/creative36711/SYN-3-TZ-1-7-4126f0cf5705819c89c3c1566cf5b67a?pvs=4',
+    tzUrl: 'https://app.notion.com/p/VAULT-1-TZ-1-0-4166f0cf570581cb9645f6a2120f4943',
   };
   const live = PromptCompiler.compile(planRequest({ role: { name: 'Coordinator', fn: 'Coordinator', zone }, mission: longMission }));
   assert.ok(live.ok, `боевой SYN-3 собирается: ${live.error?.message}`);
@@ -255,7 +255,7 @@ for (const req of cases) {
 
   const worst = PromptCompiler.compile(planRequest({
     role: { name: 'Coordinator', fn: 'Coordinator', zone },
-    mission: { ...longMission, name: 'X'.repeat(200), tzUrl: `https://www.notion.so/creative36711/${'Y'.repeat(200)}` },
+    mission: { ...longMission, name: 'X'.repeat(200), tzUrl: `https://app.notion.com/p/${'Y'.repeat(200)}` },
   }));
   assert.ok(worst.ok, `предельные данные тоже собираются: ${worst.error?.message}`);
   // Общий предел от этого не отменён: жёсткий лимит считает весь текст.
@@ -323,7 +323,7 @@ for (const req of cases) {
   const k21 = dispatchRequest('Executor', {
     task: { ...task(), title: 'SYN-1 · K-21 · Исправить offline NOTICE verifier без потери атрибуций' },
     role: { name: 'Executor Core', fn: 'Executor', zone: longZone },
-    target: { repo: 'Creative36711/synapse', baseBranch: 'main' },
+    target: { repo: 'creative-textile/vault-core', baseBranch: 'main' },
   });
   const r = PromptCompiler.compile(k21);
   assert.ok(r.ok, `K-21 с длинной зоной компилируется: ${r.error?.message}`);
@@ -336,7 +336,7 @@ for (const req of cases) {
   const longer = PromptCompiler.compile(dispatchRequest('Executor', {
     task: { ...task(), title: 'SYN-1 · K-21 · Исправить offline NOTICE verifier без потери атрибуций' },
     role: { name: 'Executor Core', fn: 'Executor', zone: `${longZone}, docs/adr/**, tools/**, src/**` },
-    target: { repo: 'Creative36711/synapse', baseBranch: 'main' },
+    target: { repo: 'creative-textile/vault-core', baseBranch: 'main' },
   }));
   assert.ok(longer.ok, 'ещё более длинная зона компилируется');
   assert.equal(longer.metrics.overheadChars, r.metrics.overheadChars, 'overhead не зависит от длины зоны (verbatim)');
@@ -456,7 +456,7 @@ for (const req of cases) {
     arbiter: { cardId: UUID.dispatch, cardTitle: 'SYN-2 · S-4 · Мини-игра арены',
       redispatchCount: 3, redispatchLimit: 3, windowHours: 6, reason: 'её видели в Rework',
       state: 'Ready', check: 'fail', answer: 'Scope blocker — не готов к мержу.',
-      pr: 'https://github.com/Creative36711/synapse/pull/26', prState: 'draft, открыт',
+      pr: 'https://github.com/creative-textile/vault-core/pull/26', prState: 'draft, открыт',
       attempts: '07.11 12:05 · dispatch · executor.card · Rework', queue: '1 Ready, 1 Rework' },
     delivery: { tier: 'full' }, ...over,
   });

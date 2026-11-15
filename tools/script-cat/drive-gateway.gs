@@ -32,7 +32,7 @@ function setupGatewayKey() {
 /**
  * Explicitly register ONE new project from the Apps Script editor.
  * Set Script Properties CF_SETUP_PROJECT_ID (profile UUID from ScriptCat) and
- * CF_SETUP_PROJECT_FOLDER (e.g. synapse), then run this function once. Copy the
+ * CF_SETUP_PROJECT_FOLDER (e.g. vault), then run this function once. Copy the
  * returned *project* key privately into that profile. Never copy the master key.
  * Existing folders are not adopted and existing project registrations are not
  * overwritten; a setup failure may leave newly-created folders for inspection.

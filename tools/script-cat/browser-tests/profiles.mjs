@@ -19,7 +19,7 @@ const schemas = {
 };
 const options = { roles: { 'Функция':['Coordinator','Executor','Auditor','Reviewer'],'Статус':['Активна'] }, missions: { 'Состояние':['Активна','Возвращена','Завершена','Провалена'] }, requests:{ 'Dispatch State':['Draft','Ready','Running','Submitted','Accepted','Rework','Blocked'],'Check':['pass','fail'],'Кому':['Builder'] }, questions:{ 'Статус':['Ждёт','Решено','Принят дефолт','Отменён'] } };
 const sources = Object.fromEntries(Object.entries(schemas).map(([k, fields]) => [ids[k], { object:'data_source', properties: Object.fromEntries(Object.entries(fields).map(([name, type]) => [name, { type, ...(type === 'select' ? {select: {options:(options[k]?.[name] || []).map(name => ({name}))}} : {}) }])) }]));
-const role = (name, fn, agent) => ({ id:id(agent), properties:{ 'Роль':{title:[{plain_text:name}]}, 'Функция':{select:{name:fn}}, 'Статус':{select:{name:'Активна'}}, 'Agent URL':{url:`https://arena.ai/agent/agent-${agent}`}, 'Репозиторий':{rich_text:[{plain_text:name === 'Builder' ? 'synapse' : 'synapse-cortex'}]} } });
+const role = (name, fn, agent) => ({ id:id(agent), properties:{ 'Роль':{title:[{plain_text:name}]}, 'Функция':{select:{name:fn}}, 'Статус':{select:{name:'Активна'}}, 'Agent URL':{url:`https://arena.ai/agent/agent-${agent}`}, 'Репозиторий':{rich_text:[{plain_text:name === 'Builder' ? 'vault' : 'vault'}]} } });
 const roles = [role('Coordinator','Coordinator',31),role('Warden','Reviewer',32),role('Builder','Executor',33)];
 const browser = await chromium.launch({ executablePath: await chromiumBin.executablePath(), args: chromiumBin.args, headless:true });
 const ctx = await browser.newContext({ viewport:{width:1000,height:900} });
@@ -45,7 +45,7 @@ await ctx.addInitScript(({script, sources, ids, roles, databaseSources}) => {
     }
     else if (path.includes('/branches/')) result = {name:'release/next'};
     else if (path.includes('/contents/')) result = [];
-    else if (path.includes('api.github.com/repos/')) result = {full_name:'team/synapse'};
+    else if (path.includes('api.github.com/repos/')) result = {full_name:'team/vault'};
     else if (path.includes('script.google.com')) {
       const data = JSON.parse(req.data || '{}');
       const registry = get('cfn-project-profiles-v1', []);
@@ -66,7 +66,7 @@ await page.locator('#cfn-project-lookup-notion').fill('lookup-secret'); await pa
 assert.equal(await page.locator('#cfn-project-lookup-notion').inputValue(), '', 'некорректные ссылки не удерживают токен');
 assert(!(await page.evaluate(() => JSON.parse(sessionStorage.getItem('mock-calls') || '[]'))).some((call) => call.url.includes('/v1/databases/')), 'неверные ссылки не вызывают запросов');
 for (const [key,value] of Object.entries(databaseIds)) await page.locator(`#cfn-project-${key}`).fill(`https://www.notion.so/Database-${value.replace(/-/g,'')}?v=${id(99)}`);
-for (const [key,value] of Object.entries({name:'Synapse',pageUrl:'https://app.notion.com/p/example',questionsUrl:'https://app.notion.com/p/feedback',repo:'team/synapse',branch:'release/next',driveFolder:'synapse'})) await page.locator(`#cfn-project-${key}`).fill(value);
+for (const [key,value] of Object.entries({name:'Vault',pageUrl:'https://app.notion.com/p/example',questionsUrl:'https://app.notion.com/p/feedback',repo:'team/vault',branch:'release/next',driveFolder:'vault'})) await page.locator(`#cfn-project-${key}`).fill(value);
 await page.evaluate(() => sessionStorage.setItem('mock-multiple','1'));
 await page.locator('#cfn-project-lookup-notion').fill('lookup-secret'); await page.locator('#cfn-project-resolve').click();
 await page.waitForFunction(() => document.querySelector('#cfn-project-note')?.textContent.includes('не ровно один'),null,{timeout:20000});
@@ -88,18 +88,18 @@ await page.locator('#cfn-project-roles-autofill').click();
 await page.waitForFunction(() => document.querySelector('#cfn-project-note')?.textContent.includes('Автозаполнено'),null,{timeout:20000});
 assert.equal(await page.locator('#cfn-route-role-0').inputValue(), id(31));
 await page.locator('#cfn-project-save').click();
-await page.waitForFunction(() => document.querySelector('#cfn-panel-project')?.textContent === 'Synapse');
+await page.waitForFunction(() => document.querySelector('#cfn-panel-project')?.textContent === 'Vault');
 const autofilled = await page.evaluate(() => JSON.parse(localStorage.getItem('gm:cfn-project-profiles-v1'))[0]);
 assert.equal(autofilled.roleRepos.length,3);
 assert.ok(autofilled.roleRepos.every((route) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(route.roleId)));
-assert.deepEqual(autofilled.repos.map((entry) => entry.repo).sort(), ['team/synapse','team/synapse-cortex']);
-assert.equal(autofilled.repo, 'team/synapse-cortex', 'главные поля синхронизированы с репозиторием Warden');
+assert.deepEqual(autofilled.repos.map((entry) => entry.repo).sort(), ['team/vault','team/vault']);
+assert.equal(autofilled.repo, 'team/vault', 'главные поля синхронизированы с репозиторием Warden');
 // Смоделирован оставшийся после прежней навигации отложенный автоматический шаг.
 await page.evaluate((id) => localStorage.setItem(`gm:project:${id}:cfn-step-request`, JSON.stringify(true)), project.id);
 await page.locator('#cfn-project-switch').click();
 await page.waitForFunction((id) => sessionStorage.getItem('cfn-active-project-v1') === id, project.id);
 await page.locator('#cfn-setup').waitFor();
-await page.waitForFunction(() => document.querySelector('#cfn-panel-project')?.textContent === 'Synapse');
+await page.waitForFunction(() => document.querySelector('#cfn-panel-project')?.textContent === 'Vault');
 assert.equal(await page.evaluate((id) => sessionStorage.getItem('cfn-project-switch-hold:'+id),project.id),'1');
 await page.locator('#cfn-step').click();
 await page.waitForTimeout(100);
@@ -114,17 +114,17 @@ await page.evaluate((p) => {
   localStorage.setItem('gm:cfn-project-profiles-v1', JSON.stringify([...profiles,p]));
 }, other);
 await page.locator('#cfn-setup').click(); await page.locator('#cfn-connection-projects').click();
-await page.locator('#cfn-project-edit').click(); await page.locator('#cfn-project-name').fill('Synapse corrected');
+await page.locator('#cfn-project-edit').click(); await page.locator('#cfn-project-name').fill('Vault corrected');
 // Редактирование не должно обойти допуск из другой вкладки во время confirm.
 await page.locator('#cfn-project-repo').fill('example/relay-fixture');
 await page.evaluate((id) => { window.confirm = () => { localStorage.setItem(`gm:project:${id}:cfn-project-ever-approved`, JSON.stringify(true)); return true; }; }, project.id);
 await page.locator('#cfn-project-save').click();
 assert.match(await page.locator('#cfn-project-note').innerText(), /допуск изменился/);
-assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('gm:cfn-project-profiles-v1'))[0].name), 'Synapse');
+assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('gm:cfn-project-profiles-v1'))[0].name), 'Vault');
 await page.evaluate((id) => { localStorage.setItem(`gm:project:${id}:cfn-project-ever-approved`, JSON.stringify(false)); window.confirm = () => true; }, project.id);
-await page.locator('#cfn-project-repo').fill('team/synapse');
+await page.locator('#cfn-project-repo').fill('team/vault');
 await page.locator('#cfn-project-save').click();
-await page.waitForFunction(() => document.querySelector('#cfn-panel-project')?.textContent === 'Synapse corrected');
+await page.waitForFunction(() => document.querySelector('#cfn-panel-project')?.textContent === 'Vault corrected');
 assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('gm:cfn-project-profiles-v1'))[0].id), project.id);
 assert.equal(await page.evaluate((id) => sessionStorage.getItem('cfn-project-switch-hold:'+id),project.id),'1');
 await page.locator('#cfn-setup').click();
@@ -171,7 +171,7 @@ assert.equal(await page.evaluate((id) => sessionStorage.getItem('cfn-project-swi
 assert.equal(await page.locator('#cfn-project-edit').isVisible(),false,'после допуска изменять источники в старом состоянии нельзя');
 await page.waitForTimeout(150);
 const callsBeforeManual = await page.evaluate(() => JSON.parse(sessionStorage.getItem('mock-calls') || '[]'));
-assert(!callsBeforeManual.some((call) => call.url.includes('/repos/team/synapse/contents/docs/decisions')), 'сторож ADR не работает до ручного запуска');
+assert(!callsBeforeManual.some((call) => call.url.includes('/repos/team/vault/contents/docs/decisions')), 'сторож ADR не работает до ручного запуска');
 assert(!callsBeforeManual.some((call) => call.url.includes('/data_sources/' + '00000014-1111-4111-8111-000000000014' + '/query')), 'сторож обратной связи тоже на hold');
 // Замена секрета снимает допуск; его можно вернуть только повторной проверкой.
 await page.locator('#cfn-project-close').click(); await page.locator('#cfn-setup').click();

@@ -1018,7 +1018,7 @@
    *
    * В базе «Роли» зона пишется разными людьми и разным почерком: у Warden это
    * абзац («Решения по постановке и приёмке; код не трогает…»), у Locale
-   * Auditor — список с префиксом «synapse: ». Прежний разбор молча выбрасывал
+   * Auditor — список с префиксом «vault: ». Прежний разбор молча выбрасывал
    * всё, что не похоже на glob, и зона превращалась в пустую: проверка
    * `scopeZoneIssue` тогда ничего не проверяла, а прозу читали как «зона есть».
    *
@@ -1031,7 +1031,7 @@
   const roleZoneGlobs = (roleZone) => {
     const out = [];
     for (const rawLine of String(roleZone || "").split(/[\n;]+/)) {
-      // Метка перед путями («synapse: », «Зона записи: ») — не путь, а подпись.
+      // Метка перед путями («vault: », «Зона записи: ») — не путь, а подпись.
       // Раньше она приклеивалась к первому шаблону, и зона начиналась со
       // второго: у Locale Auditor `locales/**` молча выпадал.
       const line = rawLine.replace(/^\s*[^:\s][^:]{0,30}:\s*/, "").trim();
@@ -1183,8 +1183,8 @@
     // обслуживал несколько репозиториев без смены UUID.
     // The freshly re-read Notion role row is the live assignment source. The
     // profile map is a compatibility fallback for older role rows without a
-    // repository field; it must not route Executor Core into the profile's
-    // default cortex repo when Notion explicitly assigns it to synapse.
+    // repository field; an explicit Notion assignment always wins over the
+    // profile default.
     const sessionRepo = canonicalTargetRepository(confirmed[0].repo || profileSessionRepo(role.id) || "", C.repo);
 
     // Карточка перечитывается прямо перед выдачей: между выбором из списка и

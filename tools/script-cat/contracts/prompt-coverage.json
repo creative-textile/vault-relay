@@ -177,7 +177,7 @@
     "heal.report": [
       "R-EVIDENCE"
     ],
-    "pilot.synapse": [],
+    "pilot.vault": [],
     "reminder.marker": [
       "R-MARKER"
     ],
@@ -281,7 +281,7 @@
     "heal.report": [
       "Maintainer"
     ],
-    "pilot.synapse": [
+    "pilot.vault": [
       "pilot"
     ],
     "reminder.marker": [],
@@ -316,7 +316,7 @@
       "git.executor"
     ],
     "heal.report": [],
-    "pilot.synapse": [],
+    "pilot.vault": [],
     "reminder.marker": [],
     "reviewer.answer": [],
     "reviewer.arbiter": [],

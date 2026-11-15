@@ -46,7 +46,7 @@ const quiet = console.log; console.log = () => {};
 const legacyKey = api.setupGatewayKey();
 const A = '11111111-1111-4111-8111-111111111111', B = '22222222-2222-4222-8222-222222222222';
 function setup(id, name) { props.set('CF_SETUP_PROJECT_ID', id); props.set('CF_SETUP_PROJECT_FOLDER', name); return api.setupProjectGateway(); }
-const a = setup(A, 'synapse'), b = setup(B, 'atlas');
+const a = setup(A, 'vault'), b = setup(B, 'atlas');
 console.log = quiet;
 assert.notEqual(a.key, b.key); assert.notEqual(a.key, legacyKey); assert.notEqual(b.key, legacyKey);
 const call = (key, body) => JSON.parse(api.doPost({ postData: { contents: JSON.stringify({ ...body, key }) } }).getContent());
@@ -109,8 +109,8 @@ const projectFolder = find(call(a.key, { action: 'ping', projectId: A }).project
 projectFolder.setName('moved');
 assert.equal(call(a.key, { action: 'ping', projectId: A }).ok, false, 'переименование не перенаправляет запись');
 assert.equal(call(a.key, { action: 'createLog', projectId: A, dispatchId: dispatch, runId: run }).ok, false);
-projectFolder.setName('synapse');
-assert.throws(() => setup(A, 'synapse'), /уже зарегистрирован/);
+projectFolder.setName('vault');
+assert.throws(() => setup(A, 'vault'), /уже зарегистрирован/);
 assert.throws(() => setup('55555555-5555-4555-8555-555555555555', 'atlas'), /уже занят/);
 assert.equal(call(a.key, { action: 'ping', projectId: A }).ok, true, 'отказ регистрации не меняет прежние доступы');
 // saveArtifact: проектная граница и чтение только своего artifacts

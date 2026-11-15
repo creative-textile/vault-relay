@@ -92,7 +92,7 @@ assert.equal(pilot.profileId, 'continuation.pilot');
 assert.equal(pilot.marker, null);
 assert.ok(pilot.metrics.overheadChars <= 250, 'pilot overhead ≤ 250');
 assert.ok(!/CF_/.test(pilot.text), 'pilot без командных маркеров');
-assert.ok(!/notion|cortex|REGULATION|WARDEN|DECISIONS|synapse-cortex/i.test(pilot.text), 'pilot без внутренних ссылок');
+assert.ok(!/notion|cortex|REGULATION|WARDEN|DECISIONS|vault/i.test(pilot.text), 'pilot без внутренних ссылок');
 
 // ── 6. Compact-retry ролевой: Auditor read-only, Executor мержит ─────────────
 const compact = (fn) => PromptCompiler.compile({

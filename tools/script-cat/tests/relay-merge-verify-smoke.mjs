@@ -35,8 +35,8 @@ const refApi = new Function(
   `${src.slice(refFrom, refTo)}\nreturn { prRef, taskTargetRepository, canonicalTargetRepository };`,
 )({ repo: 'example/relay-fixture' }, (p) => (p?.rich_text || []).map((x) => x.plain_text || '').join(''), {
   legacy: false, repos: [
-    { repo: 'Creative36711/synapse-cortex', branch: 'main' },
-    { repo: 'Creative36711/synapse', branch: 'main' },
+    { repo: 'creative-textile/vault', branch: 'main' },
+    { repo: 'creative-textile/vault-core', branch: 'main' },
   ],
 });
 const { prRef, taskTargetRepository } = refApi;
@@ -49,17 +49,17 @@ assert.deepEqual(
   'ссылка',
 );
 assert.deepEqual(
-  prRef({ pr: 'https://github.com/Creative36711/synapse/pull/5' }),
-  { repo: 'Creative36711/synapse', number: 5 },
+  prRef({ pr: 'https://github.com/creative-textile/vault-core/pull/5' }),
+  { repo: 'creative-textile/vault-core', number: 5 },
   'чужой репозиторий берётся из ссылки',
 );
 assert.equal(prRef({ pr: null }), null, 'без PR — нечего проверять');
 assert.equal(prRef({ pr: 'none' }), null, '«none» — тоже');
 assert.equal(prRef(null), null, 'без ответа — тоже');
-assert.equal(taskTargetRepository({ properties: { Repository: { rich_text: [{ plain_text: 'Creative36711/synapse' }] } }, }, 'Creative36711/synapse-cortex'), 'Creative36711/synapse', 'явный repo карточки приоритетнее профиля');
-assert.equal(taskTargetRepository({ properties: {} }, 'Creative36711/synapse'), 'Creative36711/synapse', 'старые карточки наследуют repo роли');
-assert.equal(taskTargetRepository({ properties: { Repository: { rich_text: [{ plain_text: 'synapse' }] } }, }, 'Creative36711/synapse-cortex'), 'Creative36711/synapse', 'bare slug карточки разрешается в единственный репозиторий профиля');
-assert.equal(taskTargetRepository({ properties: {} }, 'synapse'), 'Creative36711/synapse', 'bare slug роли разрешается в репозиторий профиля');
+assert.equal(taskTargetRepository({ properties: { Repository: { rich_text: [{ plain_text: 'creative-textile/vault-core' }] } }, }, 'creative-textile/vault'), 'creative-textile/vault-core', 'явный repo карточки приоритетнее профиля');
+assert.equal(taskTargetRepository({ properties: {} }, 'creative-textile/vault-core'), 'creative-textile/vault-core', 'старые карточки наследуют repo роли');
+assert.equal(taskTargetRepository({ properties: { Repository: { rich_text: [{ plain_text: 'vault-core' }] } }, }, 'creative-textile/vault'), 'creative-textile/vault-core', 'bare slug карточки разрешается в единственный репозиторий профиля');
+assert.equal(taskTargetRepository({ properties: {} }, 'vault-core'), 'creative-textile/vault-core', 'bare slug роли разрешается в репозиторий профиля');
 
 // ensureMerged calls this fast boundary guard before verifyMergeClaim. It must
 // resolve the same configured cross-repository URL, or it masks the later fix.
@@ -71,20 +71,20 @@ assert.equal(taskTargetRepository({ properties: {} }, 'synapse'), 'Creative36711
     'C', 'ACTIVE_PROFILE', 'hasMergedClaim',
     `${src.slice(refFrom, refTo)}\n${src.slice(boundaryFrom, boundaryTo)}\nreturn { projectPrBoundary };`,
   )(
-    { repo: 'Creative36711/synapse-cortex' },
+    { repo: 'creative-textile/vault' },
     { legacy: false, repos: [
-      { repo: 'Creative36711/synapse-cortex', branch: 'main' },
-      { repo: 'Creative36711/synapse', branch: 'main' },
+      { repo: 'creative-textile/vault', branch: 'main' },
+      { repo: 'creative-textile/vault-core', branch: 'main' },
     ] },
     (result) => result?.merged === true,
   ).projectPrBoundary;
   assert.equal(
-    boundary({ pr: 'https://github.com/Creative36711/synapse/pull/5' }, 'Creative36711/synapse-cortex'),
+    boundary({ pr: 'https://github.com/creative-textile/vault-core/pull/5' }, 'creative-textile/vault'),
     '',
-    'configured synapse PR is not stopped by the early boundary check',
+    'configured vault PR is not stopped by the early boundary check',
   );
   assert.match(
-    boundary({ pr: 'https://github.com/unknown/repo/pull/5' }, 'Creative36711/synapse-cortex'),
+    boundary({ pr: 'https://github.com/unknown/repo/pull/5' }, 'creative-textile/vault'),
     /PR относится к unknown\/repo/,
     'unconfigured repo remains a boundary',
   );
@@ -147,42 +147,42 @@ assert.equal(closed.status, 'closed', 'закрытый без мержа — т
 // Полная ссылка может задавать другой репозиторий только если тот входит в
 // whitelist профиля; базовый репозиторий и ветка всё равно проверяются.
 {
-  const crossRepoUrl = 'https://github.com/Creative36711/synapse/pull/5';
+  const crossRepoUrl = 'https://github.com/creative-textile/vault-core/pull/5';
   const api = makeVerify({
     merged: true,
     merged_at: '2026-11-03T11:40:26Z',
-    base: { repo: { full_name: 'Creative36711/synapse' }, ref: 'main' },
+    base: { repo: { full_name: 'creative-textile/vault-core' }, ref: 'main' },
   }, undefined, { legacy: false, repos: [
     { repo: 'example/relay-fixture', branch: 'main' },
-    { repo: 'Creative36711/synapse', branch: 'main' },
+    { repo: 'creative-textile/vault-core', branch: 'main' },
   ] });
   const check = await api.verifyMergeClaim({ pr: crossRepoUrl }, 'ghp_token', { repo: 'example/relay-fixture', branch: 'main' });
   assert.equal(check.status, 'merged', 'разрешённый URL repo переопределяет неверный repo ожидания');
-  assert.match(api.calls[0].url, /repos\/Creative36711\/synapse\/pulls\/5/, 'GitHub запрошен по репозиторию URL');
+  assert.match(api.calls[0].url, /repos\/creative-textile\/vault-core\/pulls\/5/, 'GitHub запрошен по репозиторию URL');
 }
 {
   const api = makeVerify({
     merged: true,
     merged_at: '2026-11-03T11:40:26Z',
-    base: { repo: { full_name: 'Creative36711/synapse' }, ref: 'main' },
+    base: { repo: { full_name: 'creative-textile/vault' }, ref: 'main' },
   }, undefined, { legacy: false, repos: [
-    { repo: 'Creative36711/synapse-cortex', branch: 'main' },
-    { repo: 'Creative36711/synapse', branch: 'main' },
+    { repo: 'creative-textile/vault', branch: 'main' },
+    { repo: 'creative-textile/vault-core', branch: 'main' },
   ] });
-  const check = await api.verifyMergeClaim({ pr: 5 }, 'ghp_token', { repo: 'synapse', branch: 'main' });
+  const check = await api.verifyMergeClaim({ pr: 5 }, 'ghp_token', { repo: 'vault', branch: 'main' });
   assert.equal(check.status, 'merged', 'старое targetRepo со slug нормализуется перед проверкой');
-  assert.match(api.calls[0].url, /repos\/Creative36711\/synapse\/pulls\/5/, 'slug никогда не уходит в GitHub API как owner/repo');
+  assert.match(api.calls[0].url, /repos\/creative-textile\/vault\/pulls\/5/, 'slug никогда не уходит в GitHub API как owner/repo');
 }
 {
-  const api = makeVerify({ merged: true }, undefined, { legacy: false, repos: [{ repo: 'Creative36711/synapse-cortex', branch: 'main' }] });
-  const check = await api.verifyMergeClaim({ pr: 5 }, '', { repo: 'synapse', branch: 'main' });
+  const api = makeVerify({ merged: true }, undefined, { legacy: false, repos: [{ repo: 'creative-textile/vault', branch: 'main' }] });
+  const check = await api.verifyMergeClaim({ pr: 5 }, '', { repo: 'nowhere', branch: 'main' });
   assert.equal(check.status, 'boundary', 'неразрешимый bare slug отвергается до сети');
-  assert.equal(api.calls.length, 0, 'не отправляется ошибочный /repos/synapse запрос');
+  assert.equal(api.calls.length, 0, 'не отправляется ошибочный /repos/nowhere запрос');
 }
 {
   const api = makeVerify({ merged: true, base: { repo: { full_name: 'unknown/repo' }, ref: 'main' } }, undefined, { legacy: false, repos: [
     { repo: 'example/relay-fixture', branch: 'main' },
-    { repo: 'Creative36711/synapse', branch: 'main' },
+    { repo: 'creative-textile/vault-core', branch: 'main' },
   ] });
   const check = await api.verifyMergeClaim({ pr: 'https://github.com/unknown/repo/pull/5' }, 'ghp_token', { repo: 'example/relay-fixture', branch: 'main' });
   assert.equal(check.status, 'boundary', 'неизвестный репозиторий не принимается');
@@ -201,7 +201,7 @@ assert.ok(missingApi.calls[2].url.endsWith('/repos/example/relay-fixture'), 'п�
 assert.equal(missingApi.calls[2].options.anonymous, true, 'диагностический repo-запрос тоже строго анонимный');
 
 // Если сохранённый токен получает 404, публичный PR должен проверяться
-// анонимным повтором. Это покрывает PR #5 в Creative36711/synapse: merged.
+// анонимным повтором. Это покрывает PR #5 в creative-textile/vault-core: merged.
 {
   const api = makeVerify(({ headers }) => {
     if (headers.Authorization) return Object.assign(new Error('HTTP 404: Not Found'), { status: 404 });

@@ -29,20 +29,19 @@ assert.equal(
 );
 assertDigestVersionMatches(digest, regulation);
 assert.match(digest, /## 1\. Роли/, 'в краткой версии есть раздел ролей');
-assert.match(digest, /## 2\. Репозитории и доступы/, 'в краткой версии есть репозитории и доступы D-022');
+assert.match(digest, /## 2\. Один репозиторий/, 'в краткой версии есть границы репозитория D-022');
 assert.match(digest, /## 3\. Инструменты/, 'в краткой версии есть раздел про готовые инструменты');
 assert.match(digest, /## 4\. Зоны и гейты/, 'в краткой версии есть зоны и гейты');
 
-// 1.0. Агент обязан узнать из промпта, что работа идёт в двух репозиториях и что
-//      инструменты уже лежат в репозитории ядра (D-025): иначе он ставит Godot с нуля
-//      и ищет файлы платформы, которых его роль не видит.
-assert.match(digest, /Creative36711\/synapse\b/, 'названо открытое ядро полным именем');
-assert.match(digest, /Creative36711\/synapse-cortex/, 'назван закрытый репозиторий полным именем');
-assert.match(digest, /install\.sh --check/, 'указана команда установки готового Godot');
-assert.match(digest, /setup_bpy\.sh --check/, 'указана команда установки готового Blender');
-assert.match(digest, /setup\.sh --check/, 'указана команда медиа-инструментов');
-assert.match(digest, /AGENTS\.md/, 'агент отправлен к инструкции репозитория');
-assert.match(digest, /не скачив|не ставить с нуля|ставить с нуля не нужно/i, 'сказано, что ставить с нуля не надо');
+// 1.0. Агент обязан узнать из промпта, что репозиторий один, что транспорт и
+//      проверки уже лежат в нём (D-025) и что деньги двигаются в трёх сетях.
+assert.match(digest, /creative-textile\/vault/, 'назван целевой репозиторий полным именем');
+assert.match(digest, /tools\/script-cat/, 'назван каталог транспорта');
+assert.match(digest, /npm run verify/, 'названа общая команда проверки');
+assert.match(digest, /TON/, 'названа сеть TON');
+assert.match(digest, /BEP-20/, 'названа сеть BEP-20');
+assert.match(digest, /ERC-20/, 'названа сеть ERC-20');
+assert.match(digest, /demo → testnet → mainnet/, 'назван переключатель режимов');
 
 // 1.1. Служебные заметки остаются в файле, но в промпт не попадают.
 assert.ok(rawDigest.includes('<!-- build:meta -->'), 'в файле есть маркер служебных заметок');

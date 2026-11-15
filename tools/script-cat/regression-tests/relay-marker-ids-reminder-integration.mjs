@@ -1,6 +1,6 @@
 // D-040 (05.11.2026): маркер есть, но без dispatch_id/run_id — напоминаем, а не зовём Мастера.
 //
-// Боевой инцидент K-21 (synapse): Executor Core выполнил работу и слил PR #8,
+// Боевой инцидент K-21 (vault): Executor Core выполнил работу и слил PR #8,
 // но финальный маркер прислал как
 //   CF_AGENT_RESULT: {"task":"K-21","scope":"…","check":0,"merged":true,"pr":"…","report":"…","logs":"…"}
 // — с двоеточием, с «task» вместо dispatch_id/run_id и без «status». Транспорт
@@ -44,7 +44,7 @@ const expect = { ref: CARD, runId: RUN };
 // Точная форма маркера K-21: работа сделана, но ID выдачи не скопированы.
 const k21 = {
   task: 'K-21', scope: 'K-21 only', check: 0, merged: true,
-  pr: 'https://github.com/Creative36711/synapse/pull/8',
+  pr: 'https://github.com/creative-textile/vault-core/pull/8',
   merge_sha: '654dfdfedccdcf7d8fe48e375aaf0bcd5443b0d1',
   report: 'drive/report', logs: 'drive/logs',
 };

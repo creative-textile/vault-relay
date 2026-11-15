@@ -5,12 +5,21 @@ import {resolve, relative, join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const forbidden = ['nar', 'thex'].join('');
+// Vault: комплект перенесён из другого проекта, и его прежние имена не должны
+// просачиваться в промпты, сборку и документацию агентов. Проверка идёт по
+// исполняемым источникам, промптам и руководствам; журнал решений и история
+// выпусков намеренно исключены: это архив, а не текст для агента.
+const forbiddenProjects = [['syn', 'apse'].join(''), ['creative', '36711'].join('')];
+const ARCHIVE = new Set(['DECISIONS.md', 'scriptcat-update.md', 'agent-protocol.json']);
 const ignoredDirs = new Set(['node_modules', '.git']);
 
 export function findPortableNameLeaks(root, extraFiles = []) {
   const leaks = [];
   const inspect = (path, label, directory = false) => {
     if (label.toLowerCase().includes(forbidden)) leaks.push(`${label}: имя`);
+    for (const token of forbiddenProjects) {
+      if (label.toLowerCase().includes(token)) leaks.push(`${label}: имя прежнего проекта`);
+    }
     if (directory) {
       for (const name of readdirSync(path)) {
         const child = join(path, name);
@@ -21,8 +30,13 @@ export function findPortableNameLeaks(root, extraFiles = []) {
       return;
     }
     const text = readFileSync(path, 'utf8');
+    const archive = ARCHIVE.has(label.split('/').at(-1));
     text.split(/\r?\n/).forEach((line, index) => {
       if (line.toLowerCase().includes(forbidden)) leaks.push(`${label}:${index + 1}: текст`);
+      if (archive) return;
+      for (const token of forbiddenProjects) {
+        if (line.toLowerCase().includes(token)) leaks.push(`${label}:${index + 1}: текст прежнего проекта`);
+      }
     });
   };
   for (const name of readdirSync(root)) {
@@ -43,7 +57,7 @@ export function findProvisionProjectLeaks(root) {
     const path = join(root, 'src', name);
     const text = readFileSync(path, 'utf8');
     text.split(/\r?\n/).forEach((line, index) => {
-      if (/creative36711|synapse/i.test(line)) leaks.push(`src/${name}:${index + 1}: проектное имя`);
+      if (new RegExp(forbiddenProjects.join('|'), 'i').test(line)) leaks.push(`src/${name}:${index + 1}: проектное имя`);
       if (/norm\(["']Warden|===\s*["']Warden|name\s*===\s*["']Coordinator["']/i.test(line)) {
         leaks.push(`src/${name}:${index + 1}: named-role привилегия`);
       }
