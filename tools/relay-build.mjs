@@ -50,7 +50,12 @@ export const CHECKS = [
  * Только эти пути вправе меняться в проверяемом коммите. Сторож и узел сборки
  * живут рядом с комплектом (`tools/`), но вне бандла: вкладку они не касаются.
  */
-export const ALLOWED_PATHS = ['tools/script-cat/', 'tools/relay-watchdog.mjs', 'tools/relay-build.mjs', 'docs/'];
+// Vault: единственный репозиторий, поэтому сюда же входят корневой манифест и
+// документы процесса — они часть контура транспорта, а не чужой код.
+export const ALLOWED_PATHS = ['tools/script-cat/', 'tools/modeling/', 'tools/media/', 'tools/audio/', 'audio/', 'tools/relay-watchdog.mjs', 'tools/relay-build.mjs', 'docs/', 'package.json'];
+// Сторож и узел — файлы, а не каталоги: сравниваем точно, иначе `tools/` целиком
+// считалось бы разрешённым и узел перестал бы замечать чужой код рядом с собой.
+const ALLOWED_FILES = new Set(ALLOWED_PATHS.filter((path) => !path.endsWith('/')));
 
 const run = (cmd, args, opts = {}) => spawnSync(cmd, args, {
   encoding: 'utf8',
@@ -116,14 +121,27 @@ export function versionGate({ base, current }) {
 
 /** Разрешённые пути: узел не должен принимать правки чужого кода. */
 export function pathGate({ dir, base = '' }) {
-  const args = base ? ['-C', dir, 'diff', '--name-only', `${base}...HEAD`] : ['-C', dir, 'status', '--porcelain'];
+  // `--untracked-files=all`: без этого git отдаёт «tools/» одной строкой, и узел
+  // либо пропускал бы чужой файл внутри каталога, либо принимал каталог за файл.
+  const args = base
+    ? ['-C', dir, 'diff', '--name-only', `${base}...HEAD`]
+    : ['-C', dir, 'status', '--porcelain', '--untracked-files=all'];
   const result = run('git', args);
   if (result.status !== 0) return { ok: true, files: [], why: 'диф не прочитан: проверка путей пропущена' };
   const files = String(result.stdout || '')
     .split('\n')
     .map((line) => line.trim().replace(/^[A-Z?!]{1,2}\s+/, ''))
+    // Git экранирует не-ASCII имена как "tools/.../README-\320\260.md": без
+    // раскодирования файл с кириллицей выглядит чужим и валит гейт путей.
+    .map((file) => {
+      const quoted = file.match(/^"(.+)"$/);
+      if (!quoted) return file;
+      const bytes = quoted[1].match(/\\[0-7]{3}|./g) || [];
+      const decoded = bytes.map((chunk) => (chunk.length === 4 ? parseInt(chunk.slice(1), 8) : chunk.charCodeAt(0)));
+      return Buffer.from(decoded).toString('utf8');
+    })
     .filter(Boolean);
-  const foreign = files.filter((file) => !ALLOWED_PATHS.some((prefix) => file.startsWith(prefix)));
+  const foreign = files.filter((file) => !(ALLOWED_FILES.has(file) || ALLOWED_PATHS.some((prefix) => prefix.endsWith('/') && file.startsWith(prefix))));
   return { ok: foreign.length === 0, files, foreign };
 }
 
